@@ -1,0 +1,8 @@
+logic : SELECT "starttime", "logsourceid", "username", "custom_severity_label" AS sev,
+        "custom_product_name" AS product, "custom_types" AS types,
+        "custom_resource_id" AS resource, "sourceip", "destinationip"
+    FROM events
+    WHERE "devicetype" = 'Amazon AWS Security Hub'
+    AND "custom_severity_label" IN ('CRITICAL','HIGH')
+    AND "custom_record_state" = 'ACTIVE'
+    LAST 24 HOURS
