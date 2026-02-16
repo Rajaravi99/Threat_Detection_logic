@@ -1,0 +1,15 @@
+logic : let window = 15m;
+  CommonSecurityLog
+  | where TimeGenerated >= ago(window)
+  | where DeviceVendor =~ "Fortinet" and DeviceProduct has "FortiGate"
+  | where DeviceEventCategory == 'utm:ips'
+  | parse-kv AdditionalExtensions as (FTNTFGTaction: string)
+      with (pair_delimiter=';', kv_delimiter='=')
+  | where DeviceAction in~ ("blocked", "reset","dropped") or FTNTFGTaction in~ ("blocked", "reset","dropped")
+  | where toint(LogSeverity) >= 7
+  | summarize Events=count(),
+              Dests=make_set(DestinationIP,10),
+              SigIDs=make_set(DeviceEventClassID,10),
+              Messages= make_set(Message)
+    by SourceIP, bin(TimeGenerated, 15m)
+  | where Events >= 10
