@@ -1,3 +1,6 @@
+Rule Name :
+Rule description :
+Mitre Mapping :
 logic : let window = 15m;
   CommonSecurityLog
   | where TimeGenerated >= ago(window)

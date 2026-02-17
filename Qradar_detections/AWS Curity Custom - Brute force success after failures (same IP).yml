@@ -3,8 +3,8 @@ Rule description :
 Mitre MApping : 
 Logic : SELECT QIDNAME(qid), sourceip, COUNT(*) AS failures, FIRST(destinationip) AS sample_destination, FIRST(username) AS sample_user FROM events
   WHERE LOGSOURCENAME(logsourceid) IN ('Curity_HE_OAuth_AWS_Frankfurt','Curity_LE_OAuth_AWS_Frankfurt')
-    AND QIDNAME(qid) IN ('client-authentication-failure','authentication-action-failure')
+    AND QIDNAME(qid) IN ('client-authentication-failure','authentication-action-failure') AND sourceip != '0.0.0.0'
   GROUP BY sourceip
   HAVING COUNT(*) >= 10
-  LAST 10 MINUTES;
+  LAST 10 MINUTES
 

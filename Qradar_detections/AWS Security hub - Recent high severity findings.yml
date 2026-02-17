@@ -1,4 +1,5 @@
 Rule Name : AWS_SecurityHub_High severity Finding
+Rule Description : 
 Mitre Mapping : 
 logic : SELECT * FROM events
     WHERE (logsourceidentifier = 'AWS_SecurityHub_Frankfurt' or logsourceidentifier = 'AWS_SecurityHub_Ireland')
