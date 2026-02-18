@@ -1,4 +1,4 @@
-Rule Name :
+Rule Name : Fortigate - IPS Burst of high-severity blocks from one source
 Rule description :
 Mitre Mapping :
 logic : let window = 15m;
