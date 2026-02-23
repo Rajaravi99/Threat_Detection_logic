@@ -1,0 +1,7 @@
+Rule Name : TrendMicro SIEM Collector Gateway - High‑magnitude email threat
+Rule Description : Prioritizing severe/credible detections across the board
+Mitre Mapping :
+Logic : SELECT QIDNAME(qid) AS "Event Name", magnitude, sourceip, destinationip, username FROM events
+  WHERE "EventName" = 'DETECTIONS' AND magnitude >= 7
+  ORDER BY magnitude DESC
+  LAST 60 MINUTES
