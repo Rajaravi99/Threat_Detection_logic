@@ -16,5 +16,8 @@ logic : let darkbeat_IOC_IPs = dynamic(["188.92.255.96","188.92.255.57","179.43.
     | where TimeGenerated >= ago(4d)
     | where Category =~ "ApplicationGatewayFirewallLog")
   | where SourceIP has_any (darkbeat_IOC_IPs) or clientIP_s has_any (darkbeat_IOC_IPs)
-  | where RequestURL has_any (darkbeat_IOC_Urls)
+  | where RequestURL has_any (darkbeat_IOC_Urls) or requestUri_s has_any (darkbeat_IOC_Urls)
   | where FileHash has_any (Hash_IOC_merged)
+  | where DestinationHostName has_any (darkbeat_IOC_Domains)
+
+
