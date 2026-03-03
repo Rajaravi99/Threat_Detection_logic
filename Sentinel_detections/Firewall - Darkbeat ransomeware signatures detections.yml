@@ -1,0 +1,20 @@
+Rule Name : Firewall - Darkbeat ransomware signature detections
+Rule description :
+Mitre Mapping :
+logic : let darkbeat_IOC_IPs = dynamic(["188.92.255.96","188.92.255.57","179.43.180.46","192.109.200.63","193.112.116.34","114.132.222.244","195.2.93.115","192.3.27.141","194.164.34.182","80.240.30.16","176.10.125.107","link.storjshare.io"]);
+  let darkbeat_IOC_Domains = dynamic(["pragmaticus.ru","www.ciask8.com.br","corefight.or.id","brizol.ru","server-avira.com","www.thehebrides.ca","www.westrong.net","www.eliteblacksmith.com","update-real.com","handala-hack.to","uploadfiles24.online","mailofyou.com","lrjovevg.cyberlens.digital","vco6haqa.optiweave.digital","staemconmumity.click","stearmconmumniity.com","recoverysupportcentre-ledger.com","handala.to"]);
+  let darkbeat_IOC_Urls = dynamic(["http://getmyfile365.xyz/app/handala.zip","http://getmyfile365.xyz/app/help.pdf","http://192.109.200.63/regevent"]);
+  let darkbeat_IOC_SHA1 = dynamic(["9b020dd3a60a60613d9d4a42408d317cc3cda4b3"]);
+  let darkbeat_IOC_SHA256 = dynamic(["3d0d93f651ee7b407024e5ad51b4e79408b72fb77bfd71cddeac8be3642439d7","96dec6e07229201a02f538310815c695cf6147c548ff1c6a0def2fe38f3dcbc8","6cc5b94b93bc91eb34447322cfc9b4b1cfbc1b201788acf68a0a53ce3cb091ab","6f79c0e0e1aab63c3aba0b781e0e46c95b5798b2d4f7b6ecac474b5c40b840ad"]);
+  let darkbeat_IOC_MD5 = dynamic(["77a369e5e49e7e62d8eef2c00cd02950"]);
+  let Hash_IOC_merged = set_union(darkbeat_IOC_SHA1,darkbeat_IOC_SHA256,darkbeat_IOC_MD5);
+  union
+    (CommonSecurityLog
+    | where TimeGenerated >= ago(4d)
+    | where DeviceAction in~ ("blocked", "reset","dropped")),
+    (AzureDiagnostics
+    | where TimeGenerated >= ago(4d)
+    | where Category =~ "ApplicationGatewayFirewallLog")
+  | where SourceIP has_any (darkbeat_IOC_IPs) or clientIP_s has_any (darkbeat_IOC_IPs)
+  | where RequestURL has_any (darkbeat_IOC_Urls)
+  | where FileHash has_any (Hash_IOC_merged)
