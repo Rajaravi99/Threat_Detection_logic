@@ -1,6 +1,14 @@
 Rule Name : Kerberos RC4 TGS on machine service (Golden Ticket) with specific flags
-Rule Description : 
+Rule Description : Translation KQL that hunts for privileged Kerberos logons (4672 + 4624/Kerberos) where the same account/host shows the activity within 10 minutes, but the account has no recent TGT issuance (4768) in the last 12 hours.
 Mitre Mapping : 
+  - Tactic: Credential Access (TA0006)
+  - Technique: Steal or Forge Kerberos Tickets
+  - Sub-technique:  T1558 (Golden Ticket)
+  - ID: TA0006.T1558.001
+References : 
+  - https://attack.mitre.org/detectionstrategies/DET0144/
+  - https://research.splunk.com/endpoint/7d90f334-a482-11ec-908c-acde48001122/#description
+  - https://attack.mitre.org/techniques/T1558/001/
 logic : let tgt_window = 15m;
   let privileged =
       SecurityEvent
