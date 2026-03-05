@@ -1,0 +1,25 @@
+Rule Name : Kerberos RC4 TGS on machine service (Golden Ticket) with specific flags
+Rule Description : 
+Mitre Mapping : 
+logic : let tgt_window = 15m;
+  let privileged =
+      SecurityEvent
+      | where EventID == 4672 and AccountType =~ "user"
+      | project TimeGenerated, Computer, Account;
+  let kerb_logons =
+      SecurityEvent
+      | where EventID == 4624 and LogonProcessName == "Kerberos" and AccountType =~ "user"
+      | project TimeGenerated, Computer, Account, IpAddress;
+  let last_tgt =
+      SecurityEvent
+      | where EventID == 4768 and AccountType =~ "user"
+      | summarize last_tgt=max(TimeGenerated) by TargetUserName;
+  privileged
+  | join kind=innerunique kerb_logons on Account, Computer
+  | where TimeGenerated1 between (TimeGenerated .. TimeGenerated + 10m)
+  | join kind=leftouter last_tgt on $left.Account == $right.TargetUserName
+  | where isnull(last_tgt) or last_tgt < ago(tgt_window)
+  | summarize cnt=count(), first_seen=min(TimeGenerated), last_seen=max(TimeGenerated),
+            hosts=make_set(Computer), src_ips=make_set(IpAddress)
+      by Account
+  | order by cnt desc

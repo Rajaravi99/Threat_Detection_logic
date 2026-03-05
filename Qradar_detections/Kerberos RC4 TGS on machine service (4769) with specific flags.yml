@@ -1,0 +1,42 @@
+Rule Name : Kerberos RC4 TGS on machine service (Golden Ticket) with specific flags
+Rule Description : 
+Mitre Mapping : 
+logic : -- Parameters
+  --  - 10-minute temporal correlation is approximated by bucketing starttime/600000.
+  --  - Excludes computer accounts (username ending with $).
+  --  - Filters out any user that has a TGT (4768) in the last 12h.
+
+  SELECT
+    username                                     AS "Account",
+    LOGSOURCENAME(logsourceid)                   AS "Host",
+    COUNT(*)                                     AS "cnt",
+    MIN(starttime)                               AS "first_seen",
+    MAX(starttime)                               AS "last_seen",
+    UNIQUECOUNT(sourceip)                        AS "unique_src_ips"
+  FROM events
+  WHERE
+    -- 4624 (Kerberos) side
+    QIDNAME(qid) ILIKE 'An account was successfully logged on%'
+    AND UTF8(payload) ILIKE '%Logon Process:%Kerberos%'          -- Kerberos logon path in Event 4624
+    AND username NOT ILIKE '%$'                                  -- exclude machine accounts
+
+    -- Must have a matching 4672 in the same host + 10-minute bucket
+    AND CONCAT(username,'|',STR(logsourceid),'|',STR(LONG(starttime/600000))) IN (
+          SELECT DISTINCT CONCAT(username,'|',STR(logsourceid),'|',STR(LONG(starttime/600000)))
+          FROM events
+          WHERE QIDNAME(qid) ILIKE 'Special privileges assigned to new logon%'  -- 4672
+            AND username NOT ILIKE '%$'
+          LAST 12 HOURS
+    )
+
+    -- No recent 4768 (TGT issuance) for the same user in 12 hours
+    AND username NOT IN (
+          SELECT username
+          FROM events
+          WHERE QIDNAME(qid) ILIKE 'A Kerberos authentication ticket (TGT) was requested%' -- 4768
+            AND username NOT ILIKE '%$'
+          LAST 12 HOURS
+    )
+  GROUP BY username, logsourceid
+  ORDER BY "cnt" DESC
+  LAST 12 HOURS
