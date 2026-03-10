@@ -1,16 +1,17 @@
 Rule Name : Kerberos RC4 TGS on machine service (Golden Ticket) with specific flags
-Rule Description : 
+Rule Description : Translation AQL that hunts for privileged Kerberos logons (4672 + 4624/Kerberos) where the same account/host shows the activity within 10 minutes, but the account has no recent TGT issuance (4768) in the last 12 hours.
 Mitre Mapping : 
+  - Tactic: Credential Access (TA0006)
+  - Technique: Steal or Forge Kerberos Tickets
+  - Sub-technique:  T1558 (Golden Ticket)
+  - ID: TA0006.T1558.001
 logic : -- Parameters
   --  - 10-minute temporal correlation is approximated by bucketing starttime/600000.
   --  - Excludes computer accounts (username ending with $).
   --  - Filters out any user that has a TGT (4768) in the last 12h.
 
-  SELECT
-    username AS "Account",LOGSOURCENAME(logsourceid) AS "Host",COUNT(*) AS "cnt",MIN(starttime) AS "first_seen",MAX(starttime) AS "last_seen",UNIQUECOUNT(sourceip) AS "unique_src_ips"
-  FROM events
-  WHERE
-    ((QIDNAME(qid) ILIKE 'An account was successfully logged on%' OR EventID = '4624') OR UTF8(payload) ILIKE '%Logon Process:%Kerberos%')
+  SELECT QIDNAME(qid),username,LOGSOURCENAME(logsourceid),COUNT(*),MIN(starttime) AS "first_seen",MAX(starttime) AS "last_seen",UNIQUECOUNT(sourceip) FROM events
+  WHERE ((QIDNAME(qid) ILIKE 'An account was successfully logged on%' OR EventID = '4624') OR UTF8(payload) ILIKE '%Logon Process:%Kerberos%')
     AND username NOT ILIKE '%$'
     -- Must have a matching 4672 in the same host + 10-minute bucket
     AND CONCAT(username,'|',STR(logsourceid),'|',STR(LONG(starttime/600000))) IN (
@@ -28,3 +29,5 @@ logic : -- Parameters
   GROUP BY username, logsourceid
   ORDER BY "cnt" DESC
   LAST 12 HOURS
+
+-- 4768 and 4769

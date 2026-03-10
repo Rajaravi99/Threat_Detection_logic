@@ -84,3 +84,52 @@ detection:
       - 'devo'
       - 'my'
     condition: selection_iocs and not filter_tech
+
+
+
+
+Correct DEVO logic:
+
+  from all.data
+      where (weaktoktains(message, "pragmaticus.ru")
+          or weaktoktains(message, "www.ciask8.com.br")
+          or weaktoktains(message, "corefight.or.id")
+          or weaktoktains(message, "brizol.ru")
+          or weaktoktains(message, "server-avira.com")
+          or weaktoktains(message, "www.thehebrides.ca")
+          or weaktoktains(message, "www.westrong.net")
+          or weaktoktains(message, "www.eliteblacksmith.com")
+          or weaktoktains(message, "update-real.com")
+          or weaktoktains(message, "handala-hack.to")
+          or weaktoktains(message, "uploadfiles24.online")
+          or weaktoktains(message, "mailofyou.com")
+          or weaktoktains(message, "lrjovevg.cyberlens.digital")
+          or weaktoktains(message, "vco6haqa.optiweave.digital")
+          or weaktoktains(message, "staemconmumity.click")
+          or weaktoktains(message, "stearmconmumniity.com")
+          or weaktoktains(message, "recoverysupportcentre-ledger.com")
+          or weaktoktains(message, "handala.to")
+          or weaktoktains(message, "link.storjshare.io")
+          or weaktoktains(message, "188.92.255.96")
+          or weaktoktains(message, "188.92.255.57")
+          or weaktoktains(message, "179.43.180.46")
+          or weaktoktains(message, "192.109.200.63")
+          or weaktoktains(message, "193.112.116.34")
+          or weaktoktains(message, "114.132.222.244")
+          or weaktoktains(message, "195.2.93.115")
+          or weaktoktains(message, "192.3.27.141")
+          or weaktoktains(message, "194.164.34.182")
+          or weaktoktains(message, "80.240.30.16")
+          or weaktoktains(message, "176.10.125.107")
+          or weaktoktains(message, "77a369e5e49e7e62d8eef2c00cd02950")
+          or weaktoktains(message, "9b020dd3a60a60613d9d4a42408d317cc3cda4b3")
+          or weaktoktains(message, "3d0d93f651ee7b407024e5ad51b4e79408b72fb77bfd71cddeac8be3642439d7")
+          or weaktoktains(message, "96dec6e07229201a02f538310815c695cf6147c548ff1c6a0def2fe38f3dcbc8")
+          or weaktoktains(message, "6cc5b94b93bc91eb34447322cfc9b4b1cfbc1b201788acf68a0a53ce3cb091ab")
+          or weaktoktains(message, "6f79c0e0e1aab63c3aba0b781e0e46c95b5798b2d4f7b6ecac474b5c40b840ad")
+          or weaktoktains(message, "http://getmyfile365.xyz/app/handala.zip")
+          or weaktoktains(message, "http://getmyfile365.xyz/app/help.pdf")
+          or weaktoktains(message, "http://192.109.200.63/regevent"))
+      and not (technology in ["secops", "devo", "my"])
+      group every 1h by hostIp
+    select last(message) as baseEvent, "{\"description\": \"Detects indicators associated with Darkbit ransomware campaigns targeting the edtech sector. This detection rule focuses on identifying specific domains, IP addresses, hashes, and URLs that are known to be utilized by Darkbit ransomware operators. By monitoring for these indicators within application logs, cybersecurity analysts can potentially identify and mitigate ransomware threats early in the attack lifecycle, preventing data encryption and extortion activities commonly associated with such attacks.\\n\\nDarkbit ransomware campaigns leverage a variety of TTPs to infiltrate and exploit educational technology systems. The adversaries often use phishing emails containing malicious links or attachments that lead to domains like pragmaticus.ru or server-avira.com. These domains are part of their command-and-control infrastructure, facilitating communication between the compromised system and the attackers. Additionally, IP addresses such as 188.92.255.96 and hashes like 77a369e5e49e7e62d8eef2c00cd02950 correspond to known malicious entities or files deployed during the attack. URLs like http://getmyfile365.xyz/app/handala.zip serve as download points for malicious payloads. Detecting these indicators helps in quickly identifying and responding to ransomware threats before they can cause significant damage.\\n\", \"investigation\": \"- Identify the specific indicator (domain, IP, hash, or URL) that triggered the alert and gather related log entries from SIEM and EDR systems.\\n- Determine if there are any other occurrences of the same indicator across different hosts or over a period of time to identify potential lateral movement or widespread compromise.\\n- Check for any recent phishing attempts or suspicious emails that may have delivered the initial payload linked to the identified indicator.\\n- Investigate any processes or connections associated with the flagged indicator to identify malicious activities or communications with known command-and-control servers.\\n- Analyze any file executions or downloads from URLs specified in the rule to understand the nature of the payload and its potential impact on the system.\\n- Review user activity logs around the time of detection to identify any unauthorized access or actions taken by compromised accounts.\\n- Cross-reference detected indicators with threat intelligence sources to verify if they are part of a known Darkbit ransomware campaign.\\n- Assess the integrity of critical files and systems potentially affected by the ransomware to determine if any data has been encrypted or tampered with.\\n- Consider implementing additional monitoring or blocking measures for identified indicators to prevent further intrusion attempts.\\n\", \"references\": [\"https://git.icd.capgemini.com/signatures/global-icd-detection-library/-/blob/main/active/network/firewall/darkbeat_ransomeware_signature_detection\", \"https://www.anomali.com/blog/israel-in-focus-iran-retaliatory-posture\", \"https://www.splunk.com/en_us/blog/security/handalas-wiper-threat-analysis-and-detections.html\"], \"mitre_attack\": {\"tactic\": [\"Command and Control\", \"Initial Access\", \"Exfiltration\", \"Resource Development\", \"Execution\", \"Impact\"], \"tactic_id\": [\"TA0011\", \"TA0001\", \"TA0010\", \"TA0042\", \"TA0002\", \"TA0040\"], \"technique\": [\"Application Layer Protocol\", \"Phishing\", \"Exfiltration Over Web Service\", \"Acquire Infrastructure\", \"User Execution\", \"Data Encrypted for Impact\", \"Inhibit System Recovery\"], \"technique_id\": [\"T1071\", \"T1566\", \"T1567\", \"T1583\", \"T1204\", \"T1486\", \"T1490\"], \"sub_technique\": [\"Application Layer Protocol: Web Protocols\", \"Phishing: Spearphishing Link\", \"Exfiltration Over Web Service: Exfiltration to Cloud Storage\", \"Acquire Infrastructure: Domains\"], \"sub_technique_id\": [\"T1071.001\", \"T1566.002\", \"T1567.002\", \"T1583.001\"]}}" as meta, "SecOpsDarkbitransomwaresignaturesdetectionacrossalledtechsector" as AlertName, lu("SecOpsAlertDescription", "alertType", AlertName) as alertType, lu("SecOpsAlertDescription", "alertMitreTactics", AlertName) as alertMitreTactics, lu("SecOpsAlertDescription", "alertMitreTechniques", AlertName) as alertMitreTechniques, lu("SecOpsAlertDescription", "alertPriority", AlertName) as alertPriority, "695aac95-ef91-4422-90fa-cf134c7f4155" as detection_id
