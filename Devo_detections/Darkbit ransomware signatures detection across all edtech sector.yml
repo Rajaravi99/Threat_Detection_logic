@@ -89,7 +89,6 @@ detection:
 
 
 Correct DEVO logic:
-
   from all.data
       where (weaktoktains(message, "pragmaticus.ru")
           or weaktoktains(message, "www.ciask8.com.br")
