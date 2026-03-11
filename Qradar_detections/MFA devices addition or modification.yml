@@ -5,12 +5,10 @@ Mitre Mapping :
   - Technique: 
   - Sub-technique: 
   - ID: 
-logic : SELECT QIDNAME(qid), Username, Source IP, Destination IP, Magnitude from events
-  WHERE ((Event Name ILIKE '%Update Group - Fail%' or Event Name ILIKE '%Update user-failure%' or Event Name ILIKE 'Device No Longer Managed%' or 
-  Event Name ILIKE '%Device is Disabled - Login Failure%' or Event Name ILIKE '%Add Registered Owner To Device Failure%' or Event Name ILIKE '%Add Registered Users To Device Failure%'
-  or Event Name ILIKE '%Device Update Failed%' or Event Name '%Add Registered Users To Device Failure%') AND magnitude >= 7)
+logic : APPLY Office365 - MFA device addition or modification detected on events which are detected by the LOCAL system
+        AND when the event(s) were detected by one or more of Office 365
+        AND when the event matches this AQL query
 
-
-  SELECT QIDNAME(qid), Username, Source IP, Destination IP, Magnitude from events
-  WHERE ((Event Name ILIKE '%Login Error Password Reset Registration Required Interrupt%' or Event Name ILIKE '%Update Password Profile - Success%' 
-  or Event Name ILIKE '%Change user password-success%') AND magnitude >= 7)
+  WHERE ((EventName ILIKE '%Update Group - Fail%' or EventName ILIKE '%Update user-failure%' or EventName ILIKE 'Device No Longer Managed%' or 
+  EventName ILIKE '%Device is Disabled - Login Failure%' or EventName ILIKE '%Add Registered Owner To Device Failure%' or EventName ILIKE '%Add Registered Users To Device Failure%'
+  or EventName ILIKE '%Device Update Failed%' or EventName '%Add Registered Users To Device Failure%') AND magnitude >= 7)
