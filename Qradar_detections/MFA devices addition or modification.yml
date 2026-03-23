@@ -11,4 +11,4 @@ logic : APPLY Office365 - MFA device addition or modification detected on events
 
   WHERE ((EventName ILIKE '%Update Group - Fail%' or EventName ILIKE '%Update user-failure%' or EventName ILIKE 'Device No Longer Managed%' or 
   EventName ILIKE '%Device is Disabled - Login Failure%' or EventName ILIKE '%Add Registered Owner To Device Failure%' or EventName ILIKE '%Add Registered Users To Device Failure%'
-  or EventName ILIKE '%Device Update Failed%' or EventName '%Add Registered Users To Device Failure%') AND magnitude >= 7)
+  or EventName ILIKE '%Device Update Failed%' or EventName '%Add Registered Users To Device Failure%' or QID = '113750041' or QID = '113750075' or QID = '113252144' or QID = '113252135') AND magnitude >= 7)
