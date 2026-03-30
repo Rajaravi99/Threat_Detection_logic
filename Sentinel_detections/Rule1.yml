@@ -1,0 +1,20 @@
+Rule Name : Syslog - detect failed sudo command attempts from Syslog
+Rule Description : Detect failed sudo command attempts from Syslog
+Mitre Mapping : 
+  - Tactic: Privilege Escalation, Defense Evasion
+  - Technique: Abuse Elevation Control Mechanism
+  - Sub-technique:  Sudo and Sudo Caching
+  - ID: TA0004.T1548.003
+References : 
+  - https://attack.mitre.org/tactics/TA0004/
+  - https://linuxvox.com/blog/where-are-sudo-incidents-reported/
+  - https://attack.mitre.org/techniques/T1548/003/
+logic : 
+  let lookback_window = 2h;
+  let bin_time = 1h;
+  Syslog
+  | where TimeGenerated >= ago(lookback_window)
+  | where SeverityLevel has_any ("critical","alert","warning","emergency") and Facility has_any ("daemon","authpriv")
+  | where ProcessName has "sudo"
+  | summarize rCount = count() by Computer, bin(TimeGenerated,bin_time)
+  | where rCount >= 3

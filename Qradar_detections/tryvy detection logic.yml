@@ -1,0 +1,36 @@
+Rule Name : 
+Rule Description : 
+Mitre Mapping :
+Logic : SELECT * FROM events
+  WHERE 
+      (UTF8(payload) ILIKE '%8395c3268d5c5dbae1c7c6d4bb3c318c752ba4608cfcd90eb97ffb94a910eac2%'
+      OR UTF8(payload) ILIKE '%d2a0d5f564628773b6af7b9c11f6b86531a875bd2d186d7081ab62748a800ebb%'
+      OR UTF8(payload) ILIKE '%a0d229be8efcb2f9135e2ad55ba275b76ddcfeb55fa4370e0a522a5bdee0120b%'
+      OR UTF8(payload) ILIKE '%71e35aef03099cd1f2d6446734273025a163597de93912df321ef118bf135238%'
+      OR UTF8(payload) ILIKE '%18a24f83e807479438dcab7a1804c51a00dafc1d526698a66e0640d1e5dd671a%'
+      OR UTF8(payload) ILIKE '%litellm.cloud%'
+      OR UTF8(payload) ILIKE '%checkmarx.zone%'
+      OR UTF8(payload) ILIKE '%526bf2b3-8145-43f4-82a4-048b5ba201a9%'
+      OR UTF8(payload) ILIKE '%158fbee3-1bbf-488f-8dbd-fa69d7235235%'
+      OR UTF8(payload) ILIKE '%2c8621ef-5ec2-4b21-be58-cc6e3581fa5d%'
+      OR UTF8(payload) ILIKE '%38c51809-2515-47f1-85c3-c0cd7b24930a%'
+      OR UTF8(payload) ILIKE '%a20a9dd4-73cb-4e3c-b6c9-295325912ec2%'
+      OR UTF8(payload) ILIKE '%39465148-3973-45a8-9d58-b28273f6990c%' 
+      OR UTF8(payload) ILIKE '%c6ccea31-f52f-4895-bc2a-942c434b40b6%'
+      OR UTF8(payload) ILIKE '%80dd7632-2bac-4faf-b1d8-154c798fe7d8%'
+      OR UTF8(payload) ILIKE '%f18b6132-72c0-4fbc-b5c5-e7afcec4dcef%'
+      OR UTF8(payload) ILIKE '%6e75b0e5-102a-4089-b7dd-2e7cca9434cf%'
+      OR UTF8(payload) ILIKE '%1c105f94-38c4-48c3-bd84-e8bb10a31644%'
+      OR UTF8(payload) ILIKE '%94283900-32dc-4993-989c-c6f8b824693f%'
+      OR UTF8(payload) ILIKE '%3729a9ce-9224-4eec-af30-6b57d5ae2992%'
+      OR UTF8(payload) ILIKE '%ca1ca327-7373-4a01-8da4-5b435e23441d%'
+      OR UTF8(payload) ILIKE '%d825f537-5a0b-4269-bf1e-232ea0f4ff72%'
+      OR UTF8(payload) ILIKE '%caf8a14e-7e6d-4d1e-b7f3-b1b9dd4031f7%'
+      OR UTF8(payload) ILIKE '%63c50c2b-15e6-43ea-8f29-45ccecf27210%'
+      OR UTF8(payload) ILIKE '%038ae721-54b5-4a79-af5d-24126449cec0%'
+      OR UTF8(payload) ILIKE '%8395c3268d5c5dbae1c7c6d4bb3c318c752ba4608cfcd90eb97ffb94a910eac2%'
+      OR UTF8(payload) ILIKE '%d2a0d5f564628773b6af7b9c11f6b86531a875bd2d186d7081ab62748a800ebb%'
+      OR UTF8(payload) ILIKE '%a0d229be8efcb2f9135e2ad55ba275b76ddcfeb55fa4370e0a522a5bdee0120b9%'
+      OR UTF8(payload) ILIKE '%71e35aef03099cd1f2d6446734273025a163597de93912df321ef118bf135238%'
+      OR UTF8(payload) ILIKE '%models.litellm.cloud%'
+      OR UTF8(payload) ILIKE '%checkmarx.zone%');
