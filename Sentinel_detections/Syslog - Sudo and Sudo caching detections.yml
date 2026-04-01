@@ -11,7 +11,7 @@ References :
   - https://attack.mitre.org/techniques/T1548/003/
 logic : 
   let lookback_window = 2h;
-  let bin_time = 1h;
+  let bin_time = 5m;
   Syslog
   | where TimeGenerated >= ago(lookback_window)
   | where SeverityLevel has_any ("critical","alert","warning","emergency") and Facility has_any ("daemon","authpriv")
