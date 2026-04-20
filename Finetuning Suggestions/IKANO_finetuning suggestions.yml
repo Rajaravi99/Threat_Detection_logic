@@ -1,4 +1,4 @@
-UC-DE-926 - Windows - Possible UAC Bypass - A Scheduled Task Has Been Configured to Run With Highest Privileges
+Rule Name: UC-DE-926 - Windows - Possible UAC Bypass - A Scheduled Task Has Been Configured to Run With Highest Privileges
 Logic : APPLY UC-DE-926 - Windows - Possible UAC Bypass - A Scheduled Task Has Been Configured to Run With Highest Privileges on events which are detected by the LOCAL system
         AND when the event(s) were detected by one or more of Microsoft Windows Security Event Log
         AND when the event QID is one of the following (5000872) Success Audit: A scheduled task was created
