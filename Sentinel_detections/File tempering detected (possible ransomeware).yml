@@ -1,0 +1,30 @@
+Rule Name : Sentinel_detections/File tempering detected (possible ransomeware)
+Rule description :
+Mitre Mapping :
+logic : DeviceFileEvents
+  | where TimeGenerated >= ago(2m)
+  | where ActionType in (
+      "FileDeleted",
+      "FileModified",
+      "FileRenamed"
+  )
+  | where InitiatingProcessAccountName !endswith "$"   // Exclude machine accounts
+  | where not(
+      InitiatingProcessFileName has_any (
+          "veeam",
+          "sccm",
+          "ccmexec",
+          "defender",
+          "msmpeng",
+          "backup"
+      )
+  )
+  | summarize
+      TotalFileEvents = count(),
+      DistinctFiles = dcount(FileName),
+      DistinctFolders = dcount(FolderPath)
+      by
+      DeviceName,
+      InitiatingProcessAccountName,
+      InitiatingProcessFileName
+  | where DistinctFiles >= 250
