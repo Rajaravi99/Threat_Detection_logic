@@ -1,0 +1,2 @@
+SELECT event category, eventid, username, object, filename, sourceip, DestinationIP, Domainname, Objectname from events
+WHERE (eventid IN ('4663') AND Domainname IN ('canarytokens.com','canary.tools','*.dnslog.canarytokens.com'))
