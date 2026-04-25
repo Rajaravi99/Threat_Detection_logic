@@ -1,0 +1,7 @@
+Pricilpes of zero trust:
+1. Verify explicitly - Validate trust of users, devices and applicatios and more using data telemetry
+2. Use least privilaged access - To limit the impact of any given compromise
+3. Assume compromise - Assume that attackers will fully or partially compromise and design accordingly
+4. Securely enable the business.
+
+
