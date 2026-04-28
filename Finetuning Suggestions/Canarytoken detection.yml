@@ -1,26 +1,20 @@
-SELECT event category, eventid, username, object, filename, sourceip, DestinationIP, Domainname, Objectname, ProcessName,serviceFileName from events
-WHERE (eventcatogary ILIKE '%dns query%' AND Domainname IN ('%canarytokens%','%canary.tools%','%.dnslog.canarytokens.com%'))
-OR (eventid IN ('4663','4660') AND Objectname IN ('*\canary*','*\desktop.ini'))
-OR (eventid IN ('10','11') AND ProcessName IN ('explorer.exe','cmd.exe','powershell.exe'))
-OR (eventid IN ('7045') AND serviceFileName CONTAINS ('explorer','cmd','powershell'))
+Current rule logic: APPLY DNS request for Canary Domains on events which are detected by the LOCAL system
+                    AND when the event(s) were detected by one or more of Microsoft Windows Security Event Log
+                    AND when any of Qname (custom) are contained in any of DNS Canary Domains
+
+Updated rule logic: APPLY DNS request for Canary Domains on events which are detected by the LOCAL system
+                    AND when the event(s) were detected by one or more of Microsoft Windows Security Event Log, linux
+                    AND when any of Qname (custom) contains any of "canary"
+
+Active Directory Logs (Windows/Azure)
+Authentication Logs (Windows/AD/UNIX)
+AZure AD Sign-In Logs
+DNS Logs
+EDR/EPP Logs
+Firewall/IDS/IPS/Proxy/NetworkFlow Logs
+Audit Logs (Azure AD/O365/Configuration/System)
+Qradar Logs (system health/Infrastructure)
+Threat Intell Corrrilation (Firewall)
+Windows Logs (Security/Sysmon)
 
 
-
-
-
-SELECT
-  sourceip AS Host,
-  COUNT(*) AS EventCount,
-  MIN(starttime) AS FirstSeen,
-  MAX(starttime) AS LastSeen
-FROM events
-WHERE
-(
-  DOMAINNAME ILIKE '%canarytokens%'
-  OR EVENTID IN (4688, 4663, 4660, 11, 4104, 7045)
-)
-GROUP BY sourceip
-HAVING EventCount >= 2
-LAST 30 MINUTES
-
-Canary domains - canarytokens.net, canarytokens.org, canarytokens.com
