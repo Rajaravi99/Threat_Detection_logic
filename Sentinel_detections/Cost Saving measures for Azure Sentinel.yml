@@ -1,0 +1,5 @@
+Types of logs which we pay for:
+1. Analytics logs
+2. Basic logs
+
+We pay for the amount of logs ingested and time duration for which the logs are being retained (TB of ingestion and duration of retention)

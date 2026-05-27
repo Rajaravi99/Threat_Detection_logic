@@ -1,0 +1,9 @@
+BB1: Entersekt - Auth Challenge 
+Apply BB1: Entersekt – Auth Challenge to the local system
+where log source type is any of Entersekt
+and where Evnet Name contains aNy of authentication
+and where Auth type is not N/A
+
+BB2: Entersekt – Auth Approved
+Apply BB1: Entersekt – Auth Approved to the local system
+where log source type is any of Entersekt
