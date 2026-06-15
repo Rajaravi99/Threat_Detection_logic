@@ -1,0 +1,19 @@
+let admins=(IdentityInfo
+| where AssignedRoles contains "admin" or GroupMembership has "Admin"
+| summarize by tolower(AccountUPN));
+//admins
+let known_asns = (
+SigninLogs
+| where TimeGenerated between(ago(14d)..ago(1d))
+| where ResultType == 0
+| summarize by AutonomousSystemNumber);
+//known_asns
+SigninLogs
+| where TimeGenerated > ago(1d)
+| where ResultType == 0
+| where tolower(UserPrincipalName) in (admins)
+| where AutonomousSystemNumber !in (known_asns)
+| project-reorder TimeGenerated, UserPrincipalName, UserAgent, IPAddress, AutonomousSystemNumber
+| extend AccountName = tostring(split(UserPrincipalName, "@")[0]), AccountUPNSuffix = tostring(split(UserPrincipalName, "@")[1])
+
+Explaination of how this works

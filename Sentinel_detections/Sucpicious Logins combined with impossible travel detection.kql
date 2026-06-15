@@ -1,0 +1,31 @@
+let timeframe = 2h;
+let maxTimeDiff = 30m;
+let suspiciousIPs = (ThreatIntelligenceIndicator
+    | where TimeGenerated > ago(30d)
+    | where Active == true and ExpirationDateTime > now()
+    | summarize by NetworkIP);
+let successfulSignins = (SigninLogs
+    | where TimeGenerated >= ago(timeframe)
+    | where ResultType == "0" // Only successful sign-ins
+    | project TimeGenerated, UserPrincipalName, IPAddress, Location);
+// Join 1: Correlate Successful Sign-ins with Threat Intel IPs
+successfulSignins
+    | join kind=inner hint.strategy=broadcast suspiciousIPs on $left.IPAddress == $right.NetworkIP
+    | project TimeGenerated, UserPrincipalName, IPAddress, Location
+// Join 2: Correlate with another sign-in from a different location within 30 minutes
+    | join kind=inner hint.strategy=broadcast (
+SigninLogs
+    | where TimeGenerated >= ago(timeframe)
+    | where ResultType == "0"
+    | project PrevTimeGenerated = TimeGenerated, PrevUser = UserPrincipalName, PrevIP = IPAddress, PrevLocation = Location
+) on $left.UserPrincipalName == $right.PrevUser
+    | where IPAddress != PrevIP and Location != PrevLocation
+    | where abs(datetime_diff("minute", TimeGenerated, PrevTimeGenerated)) <= maxTimeDiff
+    | project TimeGenerated, UserPrincipalName, MaliciousIP = IPAddress, MaliciousLocation = Location, PreviousLoginTime = PrevTimeGenerated, PreviousLocation = PrevLocation
+
+
+// Explaination of how this works
+// suspiciousIPs (Table 1): Scrapes the ThreatIntelligenceIndicator table for active.
+// unexpired indicators.First join: Filters for successful sign-ins that originate from malicious IPs (NetworkIP).
+// Second join: Takes that compromised user and looks for any other successful login the same user made within a 30-minute window.
+// Final Filters: Ensures the two logins happened from different IPs and locations (impossible travel behavior) and aggregates the timeline
