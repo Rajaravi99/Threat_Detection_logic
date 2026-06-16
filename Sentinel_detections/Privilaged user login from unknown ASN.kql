@@ -16,4 +16,7 @@ SigninLogs
 | project-reorder TimeGenerated, UserPrincipalName, UserAgent, IPAddress, AutonomousSystemNumber
 | extend AccountName = tostring(split(UserPrincipalName, "@")[0]), AccountUPNSuffix = tostring(split(UserPrincipalName, "@")[1])
 
-Explaination of how this works
+// Explaination of how this works
+// make a list of all privilaged accounts
+// make a list of all ASNs used for logging in for past 13 days
+// check for all the successful signins for privilaged users whose asns are not in knownASns list
