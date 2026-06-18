@@ -7,7 +7,17 @@ from azure.identity import AzureCliCredential
 # =========================
 # CONFIGURATION
 # =========================
-# /home/ravi-nandan_ray/test.py
+#
+# Follow this process to run this script:
+# 1. Please edit the variables according to your microsoft azure workspaces
+# 2. open azure clude shell
+# 3. In the tool bar click on mange files and upload this script
+# 4. you can check if the script is uploaded or not by using command "ls -l ~", you can check the directry where your script is saved.
+# 5. install python using command "pip install --user azure-identity requests pandas openpyxl" and check if python is installed or not by "python3 --version"
+# 6. Once you are sure python is installed run the script using command "python3 /home/your user_name/this_script.py"
+# 7. Once it is successfully run the xlsx file will be saved into the same directry with whatever filename you mention in the script.
+# 8. Again click on manage files and use download your xlsx file by giving proper path and detailes, and then you are done.
+#
 SUBSCRIPTION_ID = "Your_Subscription_ID"
 RESOURCE_GROUP = "Your_Resource_group_NAME"
 WORKSPACE_NAME = "Your_workspace_NAME"
