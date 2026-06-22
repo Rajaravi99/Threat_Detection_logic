@@ -1,13 +1,14 @@
 let Windows_signin_failer_user = (
 SecurityEvent
-| where TimeGenerated >= ago(7d)
+| where TimeGenerated >= ago(1d)
 | where AccountType == 'User' and EventID == '4625'
 | summarize count() by TargetUserName
 );
 let Azure_signin_failure_user = (
 SigninLogs
-| where TimeGenerated >= ago(7d)
+| where TimeGenerated >= ago(1d)
 | where ResultType != '0' and isnotempty(Identity)
 | summarize count() by Identity
 ); 
 union isfuzzy=true Windows_signin_failer_user,Azure_signin_failure_user
+| render barchart
