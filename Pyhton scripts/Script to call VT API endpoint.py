@@ -1,5 +1,4 @@
 import azure.functions as func
-import logging
 import json
 import os
 import urllib.request
@@ -8,36 +7,11 @@ import ipaddress
 import re
 from typing import Any, Dict, List, Optional
 
-app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-VT_API_BASE_URL = "https://www.virustotal.com/api/v3/ip_addresses/ip"
 
-@app.function_name(name="my_test_function")
-@app.route(route="")
-
-def my_test_function(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info("Python HTTP trigger function processed a request.")
-
-    name = req.params.get("name")
-
-    if not name:
-        try:
-            req_body = req.get_json()
-        except ValueError:
-            req_body = {}
-        name = req_body.get("name")
-
-    if name:
-        return func.HttpResponse(
-            f"Hello, {name}. This HTTP triggered function executed successfully.",
-            status_code=200
-        )
-
-    return func.HttpResponse(
-        "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-        status_code=200
-    )
+app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
 
+VT_API_BASE_URL = "https://www.virustotal.com/api/v3/ip_addresses"
 
 
 def is_valid_public_ip(ip_value: str) -> bool:
@@ -62,7 +36,7 @@ def is_valid_public_ip(ip_value: str) -> bool:
 
     except ValueError:
         return False
-    
+
 
 def extract_ips_from_text(text: str) -> List:
     """
