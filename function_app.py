@@ -9,7 +9,7 @@ import re
 from typing import Any, Dict, List, Optional
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
-VT_API_BASE_URL = "https://www.virustotal.com/api/v3/ip_addresses/ip"
+VT_API_BASE_URL = "https://www.virustotal.com/api/v3/ip_addresses"
 
 @app.function_name(name="my_test_function")
 @app.route(route="")
