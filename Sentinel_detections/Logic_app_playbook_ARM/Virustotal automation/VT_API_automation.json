@@ -1,0 +1,199 @@
+{
+    "definition": {
+        "metadata": {
+            "notes": {}
+        },
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "contentVersion": "1.0.0.0",
+        "triggers": {
+            "Microsoft_Sentinel_incident": {
+                "type": "ApiConnectionWebhook",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuresentinel']['connectionId']"
+                        }
+                    },
+                    "body": {
+                        "callback_url": "@listCallbackUrl()"
+                    },
+                    "path": "/incident-creation"
+                }
+            }
+        },
+        "actions": {
+            "Entities_-_Get_IPs": {
+                "type": "ApiConnection",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['azuresentinel']['connectionId']"
+                        }
+                    },
+                    "method": "post",
+                    "body": "@triggerBody()?['object']?['properties']?['relatedEntities']",
+                    "path": "/entities/ip"
+                },
+                "runAfter": {}
+            },
+            "For_each_1": {
+                "type": "Foreach",
+                "foreach": "@body('Entities_-_Get_IPs')?['IPs']",
+                "actions": {
+                    "VT_API_CALL_HTTP_Python": {
+                        "type": "Http",
+                        "inputs": {
+                            "uri": "https://myfunction-test-fpd2cde0ezdqcrhz.australiaeast-01.azurewebsites.net/api/vt-ip-confidence",
+                            "method": "GET",
+                            "queries": {
+                                "ip": "8.8.8.8"
+                            },
+                            "authentication": {
+                                "type": "ManagedServiceIdentity",
+                                "audience": "api://813341ca-97bb-4f41-8262-b2b5ff0107d4"
+                            }
+                        },
+                        "runtimeConfiguration": {
+                            "contentTransfer": {
+                                "transferMode": "Chunked"
+                            }
+                        }
+                    },
+                    "Parse_JSON": {
+                        "type": "ParseJson",
+                        "inputs": {
+                            "content": "@body('VT_API_CALL_HTTP_Python')",
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "success": {
+                                        "type": "boolean"
+                                    },
+                                    "count": {
+                                        "type": "integer"
+                                    },
+                                    "results": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "ip": {
+                                                    "type": "string"
+                                                },
+                                                "success": {
+                                                    "type": "boolean"
+                                                },
+                                                "confidence_score": {
+                                                    "type": "number"
+                                                },
+                                                "verdict": {
+                                                    "type": "string"
+                                                },
+                                                "reputation": {
+                                                    "type": "integer"
+                                                },
+                                                "country": {
+                                                    "type": "string"
+                                                },
+                                                "as_owner": {
+                                                    "type": "string"
+                                                },
+                                                "last_analysis_date": {
+                                                    "type": "integer"
+                                                },
+                                                "vt_stats": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "harmless": {
+                                                            "type": "integer"
+                                                        },
+                                                        "malicious": {
+                                                            "type": "integer"
+                                                        },
+                                                        "suspicious": {
+                                                            "type": "integer"
+                                                        },
+                                                        "undetected": {
+                                                            "type": "integer"
+                                                        },
+                                                        "timeout": {
+                                                            "type": "integer"
+                                                        },
+                                                        "total_engines": {
+                                                            "type": "integer"
+                                                        }
+                                                    }
+                                                },
+                                                "virustotal_gui_link": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "runAfter": {
+                            "VT_API_CALL_HTTP_Python": [
+                                "Succeeded"
+                            ]
+                        }
+                    },
+                    "For_each": {
+                        "type": "Foreach",
+                        "foreach": "@outputs('Parse_JSON')?['body']?['results']",
+                        "actions": {
+                            "Condition": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "lessOrEquals": [
+                                                "@items('For_each')?['confidence_score']",
+                                                20
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {},
+                                "else": {
+                                    "actions": {}
+                                }
+                            }
+                        },
+                        "runAfter": {
+                            "Parse_JSON": [
+                                "Succeeded"
+                            ]
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Entities_-_Get_IPs": [
+                        "Succeeded"
+                    ]
+                }
+            }
+        },
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "type": "Object",
+                "defaultValue": {}
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "type": "Object",
+            "value": {
+                "azuresentinel": {
+                    "id": "/subscriptions/813af8ce-854e-4e35-9b22-93ae6a7e9208/providers/Microsoft.Web/locations/northcentralus/managedApis/azuresentinel",
+                    "connectionId": "/subscriptions/813af8ce-854e-4e35-9b22-93ae6a7e9208/resourceGroups/rg-sentinel-auea001/providers/Microsoft.Web/connections/azuresentinel",
+                    "connectionName": "azuresentinel",
+                    "connectionProperties": {}
+                }
+            }
+        }
+    }
+}
