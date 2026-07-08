@@ -1,0 +1,20 @@
+Rule Name : Apache HTTP - Excessive URL Enumeration / Reconnaissance Activity
+Rule description :
+Mitre MApping : TA0043 - Reconnaissance
+                T1595 - Active Scanning
+Logic : SELECT
+            sourceip,
+            "cs-host",
+            UNIQUECOUNT("URL_linux") AS unique_urls,
+            COUNT(*) AS total_requests
+        FROM events
+        WHERE LOGSOURCETYPENAME(devicetype) ILIKE '%Apache%'
+        AND sourceip NOT IN ('10.1.1.10','10.1.1.11')
+        LAST 5 MINUTES
+        GROUP BY sourceip, "cs-host"
+        HAVING UNIQUECOUNT("URL_linux") > 50
+        ORDER BY unique_urls DESC
+
+APPLY rule_name on events which are detected by the LOCAL system
+AND when the event(s) were detected by one or more of apache Http server logs
+AND when the same Source IP accesses more than 50 unique URL_linux values within 5 minutes on the same application_name
