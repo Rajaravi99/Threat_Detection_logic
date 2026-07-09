@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# paths
+C:\Users\raviray\Desktop\My Tech Projects\Threat_Detection_logic\Microsoft_Sentinel\variables.env
+
 # Distribution / packaging
 .Python
 build/
