@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Tuple
 
 import requests
-from azure.identity import DefaultAzureCredential
+from azure.identity import ClientSecretCredential, DefaultAzureCredential
 from azure.monitor.ingestion import LogsIngestionClient
 from azure.core.exceptions import HttpResponseError
 
@@ -220,7 +220,11 @@ def upload_to_log_analytics(records: List[Dict[str, Any]]) -> None:
         logging.info("No records to upload.")
         return
 
-    credential = DefaultAzureCredential()
+    credential = ClientSecretCredential(
+        tenant_id=os.environ["AZURE_TENANT_ID"],
+        client_id=os.environ["AZURE_CLIENT_ID"],
+        client_secret=os.environ["AZURE_CLIENT_SECRET"]
+    )
     client = LogsIngestionClient(
         endpoint=DATA_COLLECTION_ENDPOINT,
         credential=credential,
