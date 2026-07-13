@@ -12,6 +12,10 @@ from azure.identity import DefaultAzureCredential
 from azure.monitor.ingestion import LogsIngestionClient
 from azure.core.exceptions import HttpResponseError
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv("variables.env")
 
 # -----------------------------
 # Configuration from environment
