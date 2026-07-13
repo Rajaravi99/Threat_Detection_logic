@@ -1,3 +1,13 @@
+# Environment variable files
+.env
+*.env
+variables.env
+# Env files inside Microsoft Sentinel folder
+Microsoft_Sentinel/.env
+Microsoft_Sentinel/variables.env
+Microsoft_Sentinel/*.env
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
