@@ -1,0 +1,4 @@
+ip,8.8.8.8
+domain,example.com
+url,https://example.com
+hash,44d88612fea8a8f36de82e1278abb02f
