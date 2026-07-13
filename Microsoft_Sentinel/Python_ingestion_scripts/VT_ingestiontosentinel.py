@@ -13,24 +13,24 @@ from azure.monitor.ingestion import LogsIngestionClient
 from azure.core.exceptions import HttpResponseError
 
 from dotenv import load_dotenv
+from pathlib import Path
 import os
+SCRIPT_DIR = Path(__file__).resolve().parent
+ENV_PATH = SCRIPT_DIR.parent / "variables.env"
 
-load_dotenv("variables.env")
+load_dotenv(dotenv_path=ENV_PATH)
 
 # -----------------------------
 # Configuration from environment
 # -----------------------------
-VT_API_KEY = os.environ["VT_API_KEY"]
 
 DATA_COLLECTION_ENDPOINT = os.environ["DATA_COLLECTION_ENDPOINT"]
+VT_API_KEY = os.environ["VT_API_KEY"]
 LOGS_DCR_RULE_ID = os.environ["LOGS_DCR_RULE_ID"]
 LOGS_DCR_STREAM_NAME = os.environ.get("LOGS_DCR_STREAM_NAME", "Custom-VirusTotal")
-
 INDICATOR_FILE = os.environ.get("INDICATOR_FILE", "indicators.txt")
-
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", "100"))
 REQUEST_SLEEP_SECONDS = float(os.environ.get("REQUEST_SLEEP_SECONDS", "15"))
-
 VT_BASE_URL = "https://www.virustotal.com/api/v3"
 
 logging.basicConfig(
