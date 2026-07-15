@@ -1,0 +1,6 @@
+search *
+| where TimeGenerated >= ago(3d)
+| where _IsBillable == "True"
+| summarize BillableGB = round(sum(_BilledSize) / 1024.0 / 1024.0 / 1024.0, 2) by $table
+| order by BillableGB desc
+| render areachart  
