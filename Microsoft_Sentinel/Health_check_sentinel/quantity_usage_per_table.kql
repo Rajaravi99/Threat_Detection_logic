@@ -1,0 +1,5 @@
+Usage
+| where TimeGenerated >= ago(1d)
+| project _BilledSize,DataType,Quantity,Plan,Solution
+| summarize qt = sum(Quantity)/1024.0/1024.0/1024.0 by DataType
+| order by qt desc 
