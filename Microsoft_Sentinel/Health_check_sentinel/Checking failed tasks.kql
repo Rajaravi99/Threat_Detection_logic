@@ -1,0 +1,5 @@
+let lookback_time=1h;
+union isfuzzy=true SentinelAudit, SentinelHealth
+| where TimeGenerated >= ago(lookback_time)
+| where Status == 'Failure'
+| project OperationName,SentinelResourceType,Description,SentinelResourceName,ExtendedProperties,Reason
