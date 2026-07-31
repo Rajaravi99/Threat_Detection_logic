@@ -1,0 +1,18 @@
+SecurityAlertMDE_CL
+| where TimeGenerated >= ago(1d)
+| limit 2
+| project ExtendedProperties,Entities
+| extend 
+    IP = todynamic(Entities)[5].Address,
+    commandLine = todynamic(Entities)[6].CommandLine,
+    fileHash_sha1 = todynamic(Entities)[6].ImageFile.FileHashes[0].Value,
+    fileHash_sha256 = todynamic(Entities)[6].ImageFile.FileHashes[1].Value
+| project
+    TimeGenerated,
+    AlertName = ExtendedProperties["AlertName"],
+    AlertSeverity = ExtendedProperties["AlertSeverity"],
+    AlertDescription = ExtendedProperties["AlertDescription"],
+    IP,
+    commandLine,
+    fileHash_sha1,
+    fileHash_sha256
