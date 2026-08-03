@@ -6,6 +6,7 @@ variables.env
 Microsoft_Sentinel/.env
 Microsoft_Sentinel/variables.env
 Microsoft_Sentinel/*.env
+Microsoft_Sentinel/Python_ingestion_scripts/test1.py
 
 
 # Byte-compiled / optimized / DLL files
