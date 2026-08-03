@@ -1,0 +1,87 @@
+let MDEAlerts = () {
+    SecurityAlertMDE_CL
+    | extend AlertId = tostring(SystemAlertId),
+        OriginalAlertId = tostring(VendorOriginalId),
+        AlertTitle = coalesce(tostring(AlertName), tostring(DisplayName)),
+        SeverityNormalized = tolower(tostring(AlertSeverity)),
+        StatusNormalized = tolower(tostring(Status)),
+        EntitiesJson = parse_json(Entities),
+        ExtendedPropertiesJson = parse_json(ExtendedProperties),
+        MitreTactics = tostring(Tactics),
+        MitreTechniques = tostring(Techniques)
+};
+MDEAlerts
+| where TimeGenerated >= ago(10d)
+| where SeverityNormalized in ("medium", "high")
+| where StatusNormalized !in ("resolved", "dismissed", "closed")
+| where isnotempty(EntitiesJson)
+| extend TacticArray = split(MitreTactics, ",")
+| mv-expand TacticArray
+| extend Tactic = trim(@" ", tostring(TacticArray))
+| summarize
+    AlertCount = dcount(AlertId),
+    DistinctTacticCount = dcountif(Tactic, isnotempty(Tactic)),
+    HighSeverityAlertCount =
+        dcountif(AlertId, SeverityNormalized == "high"),
+    Alerts = make_set(AlertTitle, 20),
+    AlertIds = make_set(AlertId, 20),
+    Tactics = make_set_if(Tactic, isnotempty(Tactic), 20),
+    Techniques = make_set(MitreTechniques, 20),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated)
+    by tostring(EntitiesJson)
+| where AlertCount >= 3
+| where DistinctTacticCount >= 2 or HighSeverityAlertCount >= 2
+| extend
+    DetectionReason = strcat(
+        AlertCount,
+        " distinct MDE alerts and ",
+        DistinctTacticCount,
+        " MITRE tactics were observed against the same entity."
+    )
+| project
+    LastSeen,
+    FirstSeen,
+    AlertCount,
+    HighSeverityAlertCount,
+    DistinctTacticCount,
+    Alerts,
+    AlertIds,
+    Tactics,
+    Techniques,
+    DetectionReason
+
+
+
+//        Recommended rule configuration
+    Rule name: MDE - Potential multistage attack against same entity
+    Run query every: 15 minutes
+    Lookup data from: 1 hour
+    Trigger: More than 0 results
+    Severity: High
+    Incident grouping: Group alerts by Entity
+    Suppression: 1 hour
+    Entity mapping
+
+    Map Entity according to your parser’s normalized entity type:
+
+    Device name → Host
+    User principal name → Account
+
+    Ideally, enhance the parser to produce separate columns such as:
+
+    DeviceName
+    AccountName
+    AccountUPN
+    EntityType
+
+    This avoids incorrectly mapping an account as a host.
+
+    Why this is valuable
+
+    A single MDE alert might represent an isolated event. Multiple distinct alerts and MITRE tactics affecting the same entity are more likely to indicate an attack chain, such as:
+
+    Execution followed by credential access
+    Credential access followed by lateral movement
+    Persistence followed by command and control
+    Multiple high-severity detections on the same endpoint
