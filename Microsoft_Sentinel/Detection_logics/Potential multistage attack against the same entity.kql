@@ -50,38 +50,3 @@ MDEAlerts
     Tactics,
     Techniques,
     DetectionReason
-
-
-
-//        Recommended rule configuration
-    Rule name: MDE - Potential multistage attack against same entity
-    Run query every: 15 minutes
-    Lookup data from: 1 hour
-    Trigger: More than 0 results
-    Severity: High
-    Incident grouping: Group alerts by Entity
-    Suppression: 1 hour
-    Entity mapping
-
-    Map Entity according to your parser’s normalized entity type:
-
-    Device name → Host
-    User principal name → Account
-
-    Ideally, enhance the parser to produce separate columns such as:
-
-    DeviceName
-    AccountName
-    AccountUPN
-    EntityType
-
-    This avoids incorrectly mapping an account as a host.
-
-    Why this is valuable
-
-    A single MDE alert might represent an isolated event. Multiple distinct alerts and MITRE tactics affecting the same entity are more likely to indicate an attack chain, such as:
-
-    Execution followed by credential access
-    Credential access followed by lateral movement
-    Persistence followed by command and control
-    Multiple high-severity detections on the same endpoint
