@@ -18,15 +18,15 @@ from azure.identity import AzureCliCredential
 # 7. Once it is successfully run the xlsx file will be saved into the same directry with whatever filename you mention in the script.
 # 8. Again click on manage files and use download your xlsx file by giving proper path and detailes, and then you are done.
 #
-SUBSCRIPTION_ID = "Your_Subscription_ID"
-RESOURCE_GROUP = "Your_Resource_group_NAME"
-WORKSPACE_NAME = "Your_workspace_NAME"
+SUBSCRIPTION_ID = "Your subscription id"  # Replace with your Azure subscription ID
+RESOURCE_GROUP = "Your resource group name"  # Replace with your Azure resource group name
+WORKSPACE_NAME = "Your workspace name"  # Replace with your Azure workspace name
 
 # Use a current supported Sentinel REST API version
 API_VERSION = "2025-09-01" #or any supported Microsoft API version endpoint
 
 # Save to clouddrive so the file persists in Cloud Shell
-OUTPUT_FILE = os.path.expanduser("/home/ravi-nandan_ray/Challhoub_Analytics_Rules.xlsx")
+OUTPUT_FILE = os.path.expanduser("/home/ravi-nandan_ray/Analytics_Rules.xlsx")
 
 
 def get_access_token():
