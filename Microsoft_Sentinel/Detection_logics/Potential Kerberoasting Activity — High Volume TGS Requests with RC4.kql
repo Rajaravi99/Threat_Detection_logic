@@ -1,0 +1,33 @@
+let TimeWindow = 30m;
+let ServiceThreshold = 15;
+SecurityEvent
+| where TimeGenerated > ago(2h)
+| where EventID == 4769
+| where AccountType == "User"
+| where ServiceName !endswith "$"
+| where ServiceName !in~ ("krbtgt")
+| extend TicketEncryptionType = extract(@"TicketEncryptionType"">([^<]+)", 1, EventData)
+| where TicketEncryptionType in~ ("0x17", "0x18", "0x3", "0x1")
+| where IpAddress !in ("::1", "127.0.0.1", "-")
+| summarize
+    StartTime = min(TimeGenerated),
+    EndTime = max(TimeGenerated),
+    TGSRequestCount = count(),
+    DistinctServices = dcount(ServiceName),
+    Services = make_set(ServiceName, 100),
+    EncryptionTypes = make_set(TicketEncryptionType, 10),
+    SourceIPs = make_set(IpAddress, 20),
+    Computers = make_set(Computer, 20)
+    by Account, TargetUserName, bin(TimeGenerated, TimeWindow)
+| where DistinctServices >= ServiceThreshold
+| project
+    StartTime,
+    EndTime,
+    Account,
+    TargetUserName,
+    TGSRequestCount,
+    DistinctServices,
+    Services,
+    EncryptionTypes,
+    SourceIPs,
+    Computers

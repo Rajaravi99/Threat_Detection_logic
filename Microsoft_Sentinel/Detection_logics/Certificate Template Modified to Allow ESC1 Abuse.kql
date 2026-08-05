@@ -1,0 +1,29 @@
+let SensitiveTemplateAttributes = dynamic([
+    "msPKI-Certificate-Name-Flag",
+    "msPKI-Enrollment-Flag",
+    "pKIExtendedKeyUsage",
+    "msPKI-RA-Signature",
+    "nTSecurityDescriptor"
+]);
+SecurityEvent
+| where TimeGenerated > ago(24h)
+| where EventID == 4896
+| extend ObjectClass = extract(@"ObjectClass"">([^<]+)", 1, EventData)
+| where ObjectClass has_any ("pKICertificateTemplate", "certificationAuthority")
+| extend AttributeLDAPDisplayName = extract(@"AttributeLDAPDisplayName"">([^<]+)", 1, EventData)
+| extend AttributeValue = extract(@"AttributeValue"">([^<]+)", 1, EventData)
+| extend ObjectDN = extract(@"ObjectDN"">([^<]+)", 1, EventData)
+| extend OperationType = extract(@"OperationType"">([^<]+)", 1, EventData)
+| where AttributeLDAPDisplayName in~ (SensitiveTemplateAttributes)
+| where SubjectUserName !endswith "$"
+| project
+    TimeGenerated,
+    Computer,
+    SubjectUserName,
+    SubjectDomainName,
+    ObjectDN,
+    ObjectClass,
+    AttributeLDAPDisplayName,
+    AttributeValue,
+    OperationType,
+    EventID

@@ -1,0 +1,37 @@
+let PrivilegedRoleUsers =
+AuditLogs
+| where TimeGenerated > ago(30d)
+| where Category =~ "RoleManagement"
+| where ActivityDisplayName has_any ("Add member to role", "Add eligible member to role")
+| mv-expand TargetResources
+| extend TargetUPN = tostring(TargetResources.userPrincipalName)
+| where isnotempty(TargetUPN)
+| summarize by TargetUPN;
+AuditLogs
+| where TimeGenerated > ago(24h)
+| where OperationName has_any (
+    "User registered security info",
+    "User registered all required security info",
+    "Admin registered security info",
+    "Add authentication method to user",
+    "Update authentication method for user",
+    "Set user authentication method",
+    "Add FIDO2 security key",
+    "Add phone authentication method",
+    "Add Microsoft Authenticator"
+)
+| extend TargetUserPrincipalName = tostring(TargetResources[0].userPrincipalName)
+| extend InitiatingUser = tostring(InitiatedBy.user.userPrincipalName)
+| extend InitiatingApp = tostring(InitiatedBy.app.displayName)
+| extend InitiatingIP = tostring(InitiatedBy.user.ipAddress)
+| where TargetUserPrincipalName in~ (PrivilegedRoleUsers)
+| project
+    TimeGenerated,
+    OperationName,
+    Result,
+    TargetUserPrincipalName,
+    InitiatingUser,
+    InitiatingApp,
+    InitiatingIP,
+    TargetResources,
+    AdditionalDetails

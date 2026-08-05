@@ -1,0 +1,33 @@
+let SensitiveFiles = dynamic([
+    @"\ntds.dit",
+    @"\Windows\NTDS\ntds.dit",
+    @"\Windows\System32\config\SYSTEM",
+    @"\Windows\System32\config\SECURITY",
+    @"\Windows\System32\config\SAM"
+]);
+SecurityEvent
+| where TimeGenerated > ago(24h)
+| where EventID in (4656, 4663, 4660, 4658)
+| where ObjectName has_any (SensitiveFiles)
+| where SubjectUserName !endswith "$"
+| where AccountType != "Machine"
+| summarize
+    StartTime = min(TimeGenerated),
+    EndTime = max(TimeGenerated),
+    EventCount = count(),
+    Objects = make_set(ObjectName, 50),
+    AccessMasks = make_set(AccessMask, 20),
+    Processes = make_set(ProcessName, 20),
+    Computers = make_set(Computer, 20)
+    by SubjectUserName, SubjectDomainName, Account, bin(TimeGenerated, 30m)
+| project
+    StartTime,
+    EndTime,
+    SubjectUserName,
+    SubjectDomainName,
+    Account,
+    EventCount,
+    Objects,
+    AccessMasks,
+    Processes,
+    Computers
