@@ -1,0 +1,19 @@
+let AdminAccounts = dynamic([
+"Administrator",
+"DomainAdminSvc",
+"svc-ad-automation"
+]);
+SecurityEvent
+| where TimeGenerated >= ago(24h)
+| where EventID == 4741
+| extend
+SubjectUserName = tostring(extract(@'<Data Name="SubjectUserName">([^<]*)</Data>', 1, EventData)),
+SubjectDomainName = tostring(extract(@'<Data Name="SubjectDomainName">([^<]*)</Data>', 1, EventData)),
+TargetUserName = tostring(extract(@'<Data Name="TargetUserName">([^<]*)<\/Data>', 1, EventData)),
+TargetDomainName = tostring(extract(@'<Data Name="TargetDomainName">([^<]*)<\/Data>', 1, EventData)),
+SubjectUserSid = tostring(extract(@'<Data Name="SubjectUserSid">([^<]*)<\/Data>', 1, EventData))
+| where isnotempty(TargetUserName)
+| extend CreatorIsMachine = SubjectUserName endswith "$", CreatorIsAdmin = SubjectUserName in~ (AdminAccounts)
+| where CreatorIsMachine == false and CreatorIsAdmin == false
+| project TimeGenerated, Computer, TargetDomainName, TargetUserName, SubjectDomainName, SubjectUserName, SubjectUserSid, Activity, EventID
+| order by TimeGenerated desc

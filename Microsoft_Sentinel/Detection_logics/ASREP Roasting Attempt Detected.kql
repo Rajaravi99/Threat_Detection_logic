@@ -1,0 +1,36 @@
+SecurityEvent
+| where TimeGenerated > ago(30m)
+| where EventID == 4768
+| where AccountType == "User"
+| where Status == "0x0"
+| where isnotempty( EventData) and EventData contains "targetUserName"
+| extend ParsedXml = parse_xml(tostring(EventData))
+| mv-apply XmlField = ParsedXml.EventData.Data on (
+extend
+FieldName = tostring(XmlField["@Name"]),
+FieldValue = tostring(XmlField["#text"])
+| where isnotempty(FieldName)
+| summarize ParsedFields = make_bag(pack(FieldName, FieldValue)))
+| extend PreAuthType = ParsedFields.preAuthType, TicketEncryptionType = ParsedFields.TicketEncryptionType
+| where isnotempty( PreAuthType) or isnotempty( TicketEncryptionType)
+| where PreAuthType in ("0", "0x0", "-")
+| where TargetUserName !endswith "$"
+| where TargetUserName !in~ ("krbtgt")
+| summarize
+StartTime = min(TimeGenerated),
+EndTime = max(TimeGenerated),
+RequestCount = count(),
+SourceIPs = make_set(IpAddress, 50),
+Computers = make_set(Computer, 20),
+TicketEncryptionTypes = make_set(TicketEncryptionType, 10)
+by TargetUserName, Account, bin(TimeGenerated, 1h)
+| where RequestCount >= 1
+| project
+StartTime,
+EndTime,
+TargetUserName,
+Account,
+RequestCount,
+SourceIPs,
+Computers,
+TicketEncryptionTypes

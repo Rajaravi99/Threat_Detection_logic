@@ -1,0 +1,34 @@
+SigninLogs
+| where TimeGenerated >= ago(24h)
+| where ResultType == "0"
+| extend Country = tostring(LocationDetails.countryOrRegion)
+| extend City = tostring(LocationDetails.city)
+| extend AuthDetails = tostring(AuthenticationDetails)
+| where AuthenticationRequirement =~ "multiFactorAuthentication"
+| where RiskDetail has_any ("anonymousIpAddress", "maliciousIPAddress", "adminConfirmedUserCompromised")
+or RiskEventTypes has_any ("anonymousIpAddress", "maliciousIPAddress", "unlikelyTravel")
+or NetworkLocationDetails has_any ("anonymous", "proxy", "hosting", "tor", "vpn")
+| summarize
+StartTime = min(TimeGenerated),
+EndTime = max(TimeGenerated),
+SuccessfulSignIns = count(),
+Apps = make_set(AppDisplayName, 20),
+IPs = make_set(IPAddress, 20),
+Countries = make_set(Country, 20),
+Cities = make_set(City, 20),
+RiskDetails = make_set(RiskDetail, 20),
+RiskEvents = make_set(RiskEventTypes, 20),
+NetworkLocations = make_set(NetworkLocationDetails, 20)
+by UserPrincipalName, bin(TimeGenerated, 1h)
+| project
+StartTime,
+EndTime,
+UserPrincipalName,
+SuccessfulSignIns,
+Apps,
+IPs,
+Countries,
+Cities,
+RiskDetails,
+RiskEvents,
+NetworkLocations
