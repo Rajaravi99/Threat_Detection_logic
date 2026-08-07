@@ -1,0 +1,37 @@
+{
+  "incident_id": "INC-1001",
+  "title": "Suspicious outbound connection",
+  "severity": "High",
+  "host": "WIN-CLIENT-104",
+  "user": "analyst@example.com",
+  "entities": [
+    {
+      "type": "ip",
+      "value": "8.8.8.8"
+    },
+    {
+      "type": "ip",
+      "value": "10.10.10.10"
+    },
+    {
+      "type": "domain",
+      "value": "EXAMPLE.COM."
+    },
+    {
+      "type": "domain",
+      "value": "example.com"
+    },
+    {
+      "type": "hash",
+      "value": "44d88612fea8a8f36de82e1278abb02f"
+    },
+    {
+      "type": "user",
+      "value": "analyst@example.com"
+    },
+    {
+      "type": "host",
+      "value": "WIN-CLIENT-104"
+    }
+  ]
+}

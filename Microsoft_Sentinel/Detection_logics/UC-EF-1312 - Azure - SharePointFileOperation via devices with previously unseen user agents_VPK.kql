@@ -1,0 +1,40 @@
+let threshold = 25; 
+let szSharePointFileOperation = "SharePointFileOperation"; 
+let szOperations = dynamic(["FileDownloaded", "FileUploaded"]); 
+// Changed historical baseline to look from 14 days ago up to 1 days ago
+let historicalActivity = OfficeActivity 
+    | where TimeGenerated between(ago(14d) .. ago(1d)) 
+    | where RecordType =~ szSharePointFileOperation 
+    | where Operation in~ (szOperations) 
+    | where isnotempty(UserAgent) 
+    | summarize historicalCount = count() by UserAgent, RecordType, Operation; 
+// Recent activity monitors the last 7 days
+// historicalActivity
+let recentActivity = OfficeActivity 
+    | where TimeGenerated > ago(14d) 
+    | where RecordType =~ szSharePointFileOperation 
+    | where Operation in~ (szOperations) 
+    | where isnotempty(UserAgent) 
+    | summarize min(Start_Time), max(Start_Time), recentCount = count() by UserAgent, RecordType, Operation; 
+// recentActivity
+let RareUserAgent = recentActivity 
+    | join kind = leftanti (historicalActivity) on UserAgent 
+    | order by recentCount desc, UserAgent 
+    | where recentCount > threshold; 
+// Final output filters for the exact same 7-day window
+// RareUserAgent
+OfficeActivity 
+    | where TimeGenerated > ago(7d) 
+    | where RecordType =~ szSharePointFileOperation 
+    | where Operation in~ (szOperations) 
+    | where isnotempty(UserAgent) 
+    | join kind= inner (RareUserAgent) on UserAgent, RecordType, Operation 
+    | where Start_Time between(min_Start_Time .. max_Start_Time) 
+    | where OfficeObjectId !contains ".jpg" and OfficeObjectId !contains ".heic" 
+    | extend Filename = extract(@"[^/]+$", 0, OfficeObjectId)
+    | project-away OfficeObjectId,Site_Url,RecordType,UserKey,UserType,OrganizationId,ItemType,OfficeWorkload,SourceFileExtension,EventSource,SourceRelativeUrl,SourceRecordId,
+    UserKey,AppAccessContext
+    | summarize StartTimeUtc = min(min_Start_Time), EndTimeUtc = max(max_Start_Time),dcount(UserId) by Operation, UserAgent,ClientIP, UserId, Filename, UserAgentSeenCount = recentCount 
+    | extend timestamp = StartTimeUtc, AccountCustomEntity = UserId
+    | order by UserAgentSeenCount desc, UserAgent asc, Operation asc, UserId asc
+| summarize RowsReturned = count(),ReturnedBytes = sum(estimate_data_size(*)),make_set(UserId),make_set(ClientIP),make_set(tostring(Filename)),InitialStartTime = min(StartTimeUtc),FinalEndTime = max(EndTimeUtc), count() by UserAgent,Operation
