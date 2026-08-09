@@ -1,7 +1,13 @@
 
 import os
+import sys
 import requests
-import pandas as pd
+try:
+    import pandas as pd  # type: ignore[import]
+except ImportError as e:
+    raise ImportError(
+        "Missing required package 'pandas'. Install it with 'pip install pandas openpyxl'."
+    ) from e
 from azure.identity import AzureCliCredential
 
 # =========================
@@ -18,9 +24,9 @@ from azure.identity import AzureCliCredential
 # 7. Once it is successfully run the xlsx file will be saved into the same directry with whatever filename you mention in the script.
 # 8. Again click on manage files and use download your xlsx file by giving proper path and detailes, and then you are done.
 #
-SUBSCRIPTION_ID = "Your subscription id"  # Replace with your Azure subscription ID
-RESOURCE_GROUP = "Your resource group name"  # Replace with your Azure resource group name
-WORKSPACE_NAME = "Your workspace name"  # Replace with your Azure workspace name
+SUBSCRIPTION_ID = "your-subscription-id"  # Replace with your Azure subscription ID
+RESOURCE_GROUP = "your-resource-group-name"  # Replace with your Azure resource group name
+WORKSPACE_NAME = "your-workspace-name"  # Replace with your Azure workspace name
 
 # Use a current supported Sentinel REST API version
 API_VERSION = "2025-09-01" #or any supported Microsoft API version endpoint
