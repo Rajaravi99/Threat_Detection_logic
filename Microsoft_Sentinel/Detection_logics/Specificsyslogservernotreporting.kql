@@ -1,0 +1,7 @@
+let MonitoringPeriod = 1h;
+Heartbeat
+| where TimeGenerated >= ago(MonitoringPeriod)
+| where Computer == 'enccap-snlog-001'
+| summarize logCount = count(), lastHeartBeat = arg_max(TimeGenerated, *) by Computer
+| extend isLogPresent = iff((lastHeartBeat < ago(45m)), "Logs Not Received From Last 1 Hour", "Logs Received")
+| where isLogPresent == "Logs Not Received From Last 1 Hour"
