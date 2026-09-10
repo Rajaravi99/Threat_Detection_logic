@@ -1,0 +1,52 @@
+let Lookback = 10d;
+WsSecurityEvents_CL
+| where TimeGenerated >= ago(Lookback)
+| extend LocalTime = datetime_utc_to_local(TimeGenerated, "US/Eastern")
+| where DeviceEventClassID in~ ("edr.created", "edr.updated")
+| extend Extensions = parse_json(AdditionalExtensions)
+| extend Details = parse_json(Extensions.details)
+| extend
+    AccountName = tostring(Extensions.accountName),
+    IncidentId = tostring(Details.incidentId),
+    IncidentPublicId = tostring(Details.incidentPublicId),
+    EventAction = tostring(Details.action),
+    Risk = toupper(tostring(Details.risk)),
+    PreviousRisk = toupper(tostring(Details.riskBefore)),
+    IncidentStatus = toupper(tostring(Details.status)),
+    Resolution = toupper(tostring(Details.resolution)),
+    Categories = toupper(tostring(Details.categories)),
+    Fingerprint = tostring(Details.fingerprint),
+    ClientTimestampRaw = tostring(Details.clientTimestamp)
+| where Risk == "HIGH"
+| where Categories has "LATERAL_MOVEMENT"
+| where IncidentStatus == "NEW" or isempty(IncidentStatus)
+| where Resolution == "UNCONFIRMED" or isempty(Resolution)
+| where
+    DeviceEventClassID =~ "edr.created"
+    or EventAction =~ "NEW"
+    or (
+        DeviceEventClassID =~ "edr.updated"
+        and PreviousRisk != "HIGH"
+    )
+| summarize arg_max(TimeGenerated, *) by IncidentId
+| extend
+    HostCustomEntity = SourceHostName,
+    IncidentCustomEntity = IncidentPublicId
+| project
+    TimeGenerated,
+    LocalTime,
+    AccountName,
+    SourceHostName,
+    IncidentPublicId,
+    IncidentId,
+    EventAction,
+    Risk,
+    PreviousRisk,
+    Categories,
+    IncidentStatus,
+    Resolution,
+    Fingerprint,
+    LogSeverity,
+    Message,
+    HostCustomEntity,
+    IncidentCustomEntity
