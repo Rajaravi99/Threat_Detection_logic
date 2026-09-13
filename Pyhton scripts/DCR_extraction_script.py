@@ -60,3 +60,11 @@ if __name__ == "__main__":
     #     json.dump(extracted_rules, f, indent=4)
         
     # print(f"\nSuccess! Total {len(extracted_rules)} DCRs saved to {output_filename}")
+
+    with open(f"DCRs_{SENTINEL_RESOURCE_GROUP}.csv", "w", newline="") as csvfile:
+        fieldnames = ["name", "id", "location", "immutable_id", "kind", "data_sources", "destinations", "data_flows"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        
+        writer.writeheader()
+        for dcr in extracted_rules:
+            writer.writerow(dcr)

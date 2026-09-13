@@ -159,3 +159,4 @@ __azurite_db*__.json
 .env
 local.settings.json
 DCRs_rg-mssp-sentinel-na-topco.json
+DCRs_rg-mssp-sentinel-na-topco.csv
