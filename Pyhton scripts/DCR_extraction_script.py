@@ -16,8 +16,8 @@ from azure.identity import DefaultAzureCredential
 from azure.mgmt.monitor import MonitorManagementClient
 
  # REPLACE THESE VALUES WITH YOUR AZURE DETAILS
-AZURE_SUBSCRIPTION_ID = "2a9d8c99-0a3b-4de4-b829-a5720b93fa40"
-SENTINEL_RESOURCE_GROUP = "rg-mssp-sentinel-na-topco"
+AZURE_SUBSCRIPTION_ID = "put your subscription id here"
+SENTINEL_RESOURCE_GROUP = "put your resource group name here"
 # This automatically checks for your local 'az login' session
 credential = DefaultAzureCredential() 
 monitor_client = MonitorManagementClient(credential, AZURE_SUBSCRIPTION_ID)
@@ -63,8 +63,8 @@ if __name__ == "__main__":
 
     with open(f"DCRs_{SENTINEL_RESOURCE_GROUP}.csv", "w", newline="") as csvfile:
         fieldnames = ["name", "id", "location", "immutable_id", "kind", "data_sources", "destinations", "data_flows"]
+        print(f'{fieldnames}\n')
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        
         writer.writeheader()
         for dcr in extracted_rules:
             writer.writerow(dcr)
