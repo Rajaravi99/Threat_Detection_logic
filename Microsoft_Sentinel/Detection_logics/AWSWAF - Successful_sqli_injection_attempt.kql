@@ -1,0 +1,35 @@
+// AWSWAF only - SQLi payloads that were NOT blocked
+let lookback      = 1h;
+let minNotBlocked = 3;   // SQLi requests that were allowed or only counted
+let minPayloads   = 3;   // distinct payload variations (sqlmap-style tuning)
+let SqliTerms     = dynamic(["information_schema","pg_sleep","sleep","benchmark","waitfor",
+                             "xp_cmdshell","load_file","extractvalue","updatexml","outfile","dumpfile"]);
+AWSWAF
+| where TimeGenerated > ago(lookback)
+| extend ClientIp = tostring(HttpRequest.clientIp),
+    Uri = tostring(HttpRequest.uri),
+    Country = tostring(HttpRequest.country)
+| where isnotempty(ClientIp)
+| extend Action  = toupper(tostring(Action)),
+         Decoded = replace_string(url_decode(url_decode(strcat(tostring(Uri), "?", tostring(Args)))), "+", " ") // need to check on this line i did not see any log where Uri contains and Arguments if url conatins arguments need to check where are those in the logs
+| where Decoded has_any (SqliTerms)
+     or Decoded has_all ("union", "select")
+     or Decoded has_all ("or", "1=1")
+     or tostring(TerminatingRuleId) contains "sqli"            // WAF's own SQLi rule label
+| summarize
+    NotBlocked     = countif(Action != "BLOCK"),
+    Blocked        = countif(Action == "BLOCK"),
+    DistinctPayloads = dcount(Decoded),
+    FirstBlocked   = minif(TimeGenerated, Action == "BLOCK"),
+    LastNotBlocked = maxif(TimeGenerated, Action != "BLOCK"),
+    Payloads       = make_set_if(substring(Decoded, 0, 200), Action != "BLOCK", 8),
+    Uris           = make_set_if(tostring(Uri), Action != "BLOCK", 8),
+    Countries      = make_set(tostring(Country), 3)
+    by ClientIp
+| where NotBlocked >= minNotBlocked and DistinctPayloads >= minPayloads
+| extend BypassAfterBlock = isnotnull(FirstBlocked) and LastNotBlocked > FirstBlocked,
+         Severity = iff(isnotnull(FirstBlocked) and LastNotBlocked > FirstBlocked, "High", "Medium")
+| project TimeGenerated = LastNotBlocked, ClientIp, Countries, Severity, NotBlocked, Blocked,
+          DistinctPayloads, BypassAfterBlock, Payloads, Uris
+| extend IPCustomEntity = ClientIp
+// The query finds source IPs that sent several different SQL injection payloads which the WAF did not block (ALLOW or COUNT). Several variations from one IP suggest an attacker is tuning payloads, and any that got through may have reached your application. It cannot prove the exploit worked, because WAF logs don’t contain the application’s response.
