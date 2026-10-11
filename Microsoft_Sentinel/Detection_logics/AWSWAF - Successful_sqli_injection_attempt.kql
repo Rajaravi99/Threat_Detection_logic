@@ -3,7 +3,7 @@ let lookback      = 1h;
 let minNotBlocked = 3;   // SQLi requests that were allowed or only counted
 let minPayloads   = 3;   // distinct payload variations (sqlmap-style tuning)
 let SqliTerms     = dynamic(["information_schema","pg_sleep","sleep","benchmark","waitfor",
-                             "xp_cmdshell","load_file","extractvalue","updatexml","outfile","dumpfile"]);
+                             "xp_cmdshell","load_file","extractvalue","updatexml","outfile","dumpfile"]); // we can use regular expressions here to make the rule better and more precise, but this is a good start and will catch most of the common SQLi payloads
 AWSWAF
 | where TimeGenerated > ago(lookback)
 | extend ClientIp = tostring(HttpRequest.clientIp),

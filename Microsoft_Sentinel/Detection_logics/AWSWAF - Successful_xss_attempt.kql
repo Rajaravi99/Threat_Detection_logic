@@ -1,0 +1,53 @@
+// AWSWAF only - XSS payloads NOT blocked
+let lookback      = 1h;
+let minNotBlocked = 2;   // XSS requests that were allowed or only counted
+let minPayloads   = 2;   // distinct payload variations
+let XssTerms      = dynamic(["onerror","onload","onmouseover","onfocus","onclick","ontoggle",
+                             "onanimationstart","srcdoc","fromcharcode","xss"]);
+let CookieTheft   = dynamic(["document.cookie","localstorage","sessionstorage","xmlhttprequest","fetch"]);
+AWSWAF
+| where TimeGenerated > ago(lookback)
+| extend ClientIp = tostring(HttpRequest.clientIp),
+    Uri = tostring(HttpRequest.uri),
+    Country = tostring(HttpRequest.country)
+| where isnotempty(ClientIp)
+| extend Action  = toupper(tostring(Action)),
+         Decoded = tolower(replace_string(url_decode(url_decode(strcat(tostring(Uri), "?", tostring(Args)))), "+", " ")),
+         RuleText = tolower(strcat(tostring(TerminatingRuleId), " ", tostring(RuleGroupList))) //It builds one lowercase string containing every WAF rule name that was involved in the request, so you can search that string for “xss” or “crosssitescripting” in a single check.
+| where Decoded contains "<script"
+     or Decoded contains "</script"
+     or Decoded contains "javascript:"
+     or Decoded contains "<svg"
+     or Decoded contains "<iframe"
+     or Decoded contains "alert"
+     or Decoded has_any (XssTerms)
+     or Decoded has_any (CookieTheft)
+     or RuleText contains "xss" or RuleText contains "crosssitescripting"   // WAF's own XSS rule label
+| extend StealsData = Decoded has_any (CookieTheft)
+| summarize
+    NotBlocked       = countif(Action != "BLOCK"),
+    Blocked          = countif(Action == "BLOCK"),
+    DistinctPayloads = dcount(Decoded),
+    CookieTheftTries = countif(StealsData and Action != "BLOCK"),
+    FirstBlocked     = minif(TimeGenerated, Action == "BLOCK"),
+    LastNotBlocked   = maxif(TimeGenerated, Action != "BLOCK"),
+    Payloads         = make_set_if(substring(Decoded, 0, 200), Action != "BLOCK", 8),
+    Uris             = make_set_if(tostring(Uri), Action != "BLOCK", 8),
+    Countries        = make_set(tostring(Country), 3)
+    by ClientIp
+| where NotBlocked >= minNotBlocked and DistinctPayloads >= minPayloads
+| extend BypassAfterBlock = isnotnull(FirstBlocked) and LastNotBlocked > FirstBlocked
+| extend Severity = iff(BypassAfterBlock or CookieTheftTries > 0, "High", "Medium")
+| project TimeGenerated = LastNotBlocked, ClientIp, Countries, Severity, NotBlocked, Blocked,
+          DistinctPayloads, CookieTheftTries, BypassAfterBlock, Payloads, Uris
+| extend IPCustomEntity = ClientIp
+// This query detects IPs that sent multiple XSS payloads which the WAF did not block (ALLOW or COUNT), a sign of a probable WAF bypass or a payload that may have reached your application.
+
+// How it works:
+
+// Normalize: Rebuilds Uri?Args, double URL-decodes it, converts + to spaces and lowercases it, so encoding and mixed-case tricks don’t hide the payload. It also builds RuleText, a string of all WAF rule names involved in the request.
+// Filter for XSS: Keeps requests containing XSS indicators: <script, javascript:, <svg, <iframe, alert(, event handlers (onerror, onload, ...), cookie or data-theft terms (document.cookie, fetch(), or an XSS rule label in RuleText.
+// Aggregate per IP: Counts how many XSS requests were blocked vs. not blocked, how many distinct payloads were sent, and how many not-blocked requests tried cookie or data theft.
+// Threshold: Keeps IPs with at least 2 unblocked XSS requests and at least 2 distinct payloads, which points to an attacker tuning payloads rather than a one-off match.
+// Severity: High if the IP got a payload through after being blocked earlier (evasion worked) or attempted cookie theft. Otherwise Medium.
+// Output: One row per IP with sample unblocked payloads, targeted URIs, countries, and the IP mapped as an entity.
