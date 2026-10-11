@@ -58,3 +58,20 @@ Blocks
           BlockedRules, BlockedUris, AllowedUris, AllowedMethods,
           FirstBlock, LastBlock, ThresholdTime, FirstAllowed, LastAllowed, WebAcls
 | extend IPCustomEntity = ClientIp
+
+
+
+
+
+
+
+// What this detcetion logic does and how it works:
+// This query detects an IP that gets blocked many times by AWS WAF and then has requests allowed through shortly afterward, which can indicate a successful WAF bypass.
+
+// How it works:
+
+// Collect events: Pulls the last hour of AWS WAF logs and normalizes the key fields (IP, action, URI, rule, country).
+// Find heavy blockers: For each IP, counts BLOCK actions. IPs with 20 or more blocks are kept, and the timestamp of the 20th block becomes the ThresholdTime.
+// Find the follow-up: Joins those IPs to their ALLOW events and keeps only those that occurred within 30 minutes after ThresholdTime.
+// Score it: Checks whether any URI that was blocked earlier was later allowed (SameUriAllowed). That is the strongest signal of evasion. Severity is High if a blocked path got through or the IP had 100 or more blocks, otherwise Medium.
+// Output: One row per IP with block and allow counts, rules hit, URIs involved, timing, and the IP mapped as an entity for the alert.
