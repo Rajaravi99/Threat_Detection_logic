@@ -8,7 +8,8 @@ AWSWAF
 | where TimeGenerated > ago(lookback)
 | extend ClientIp = tostring(HttpRequest.clientIp),
     Uri = tostring(HttpRequest.uri),
-    Country = tostring(HttpRequest.country)
+    Country = tostring(HttpRequest.country),
+    Args = tostring(HttpRequest.args)
 | where isnotempty(ClientIp)
 | extend Action  = toupper(tostring(Action)),
          Decoded = replace_string(url_decode(url_decode(strcat(tostring(Uri), "?", tostring(Args)))), "+", " ") // need to check on this line i did not see any log where Uri contains and Arguments if url conatins arguments need to check where are those in the logs

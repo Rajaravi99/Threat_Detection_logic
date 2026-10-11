@@ -1,0 +1,66 @@
+// AWSWAF only - Path traversal / LFI attempts
+let lookback     = 1h;
+let minAttempts  = 5;    // volume threshold for blocked-only scanning
+let SensitiveFiles = dynamic(["/etc/passwd","/etc/shadow","/etc/hosts","/proc/self","/proc/version",
+                              "win.ini","boot.ini","c:/windows","system32","web-inf","web.config",
+                              "/.env",".htaccess",".htpasswd","id_rsa",".bash_history","wp-config","/var/log/"]);
+let Wrappers     = dynamic(["php://filter","php://input","expect://","phar://","zip://","file://"]);
+AWSWAF
+| where TimeGenerated > ago(lookback)
+| extend ClientIp = tostring(HttpRequest.clientIp),
+    Uri = tostring(HttpRequest.uri),
+    Country = tostring(HttpRequest.country),
+    Args = tostring(HttpRequest.args)
+| where isnotempty(ClientIp)
+| extend Action   = toupper(tostring(Action)),
+         RawLower = tolower(strcat(tostring(Uri), "?", tostring(Args))),
+         RuleText = tolower(strcat(tostring(TerminatingRuleId), " ", tostring(RuleGroupList)))
+| extend Decoded  = replace_string(replace_string(url_decode(url_decode(RawLower)), "\\", "/"), "+", " ")
+| extend HasTraversal = Decoded contains "../" or Decoded contains "..;/"
+                        or RawLower contains "%c0%ae" or RawLower contains "%c0%af" or RawLower contains "%u002e",
+         HasWrapper   = Decoded has_any (Wrappers),
+         HitsSensitive = Decoded has_any (SensitiveFiles),
+         WafLabel     = RuleText contains "genericlfi" or RuleText contains "lfi_" or RuleText contains "traversal"
+| extend HitsSensitive = HitsSensitive or Decoded contains "/etc/passwd" or Decoded contains "/etc/shadow"
+                         or Decoded contains "win.ini" or Decoded contains "/proc/self"
+| where HasTraversal or HasWrapper or WafLabel or (HitsSensitive and Decoded contains "..")
+| extend Depth = array_length(split(Decoded, "../")) - 1       // number of ../ sequences
+| summarize
+    Attempts         = count(),
+    NotBlocked       = countif(Action != "BLOCK"),
+    Blocked          = countif(Action == "BLOCK"),
+    SensitiveNotBlk  = countif(HitsSensitive and Action != "BLOCK"),
+    WrapperNotBlk    = countif(HasWrapper and Action != "BLOCK"),
+    MaxDepth         = max(Depth),
+    DistinctPayloads = dcount(Decoded),
+    DistinctUris     = dcount(tostring(Uri)),
+    FirstSeen        = min(TimeGenerated),
+    FirstBlocked     = minif(TimeGenerated, Action == "BLOCK"),
+    LastNotBlocked   = maxif(TimeGenerated, Action != "BLOCK"),
+    LastSeen         = max(TimeGenerated),
+    Payloads         = make_set_if(substring(Decoded, 0, 200), Action != "BLOCK", 8),
+    Uris             = make_set_if(tostring(Uri), Action != "BLOCK", 8),
+    Countries        = make_set(tostring(Country), 3)
+    by ClientIp
+| where NotBlocked > 0 or Attempts >= minAttempts
+| extend BypassAfterBlock = isnotnull(FirstBlocked) and LastNotBlocked > FirstBlocked
+| extend Outcome = case(SensitiveNotBlk > 0 or WrapperNotBlk > 0, "Sensitive file/wrapper request NOT blocked",
+                        NotBlocked > 0, "Traversal NOT blocked",
+                        "Blocked scanning")
+| extend Severity = case(SensitiveNotBlk > 0 or WrapperNotBlk > 0 or BypassAfterBlock, "High",
+                         NotBlocked > 0, "Medium",
+                         DistinctUris >= 10, "Medium",
+                         "Low")
+| project TimeGenerated = LastSeen, ClientIp, Countries, Severity, Outcome, Attempts, NotBlocked, Blocked,
+          SensitiveNotBlk, WrapperNotBlk, MaxDepth, DistinctPayloads, DistinctUris,
+          BypassAfterBlock, Payloads, Uris, FirstSeen, LastSeen
+| extend IPCustomEntity = ClientIp
+// This query detects IPs sending path traversal or local file inclusion (LFI) requests, and shows whether the WAF blocked them or let them through.
+
+// How it works:
+
+// Normalize: Rebuilds Uri?Args, double URL-decodes it, converts \ to / and + to spaces, and lowercases it, so encoded or mixed-case variants all become plain ../. It also builds RuleText from the WAF rule names involved.
+// Flag LFI indicators: Keeps requests with traversal sequences (../, ..;/, overlong encodings like %c0%ae), inclusion wrappers (php://filter, phar://), a sensitive file target plus .. (/etc/passwd, win.ini, .env), or a WAF LFI rule label.
+// Aggregate per IP: Counts attempts, blocked vs. not blocked, sensitive-file and wrapper requests that got through, traversal depth, and distinct payloads and URIs.
+// Threshold: Alerts if any request was not blocked, or if blocked scanning reaches 5 or more attempts.
+// Severity: High if a sensitive file or wrapper request got through, or the IP got through after being blocked. Medium for any unblocked traversal or broad scanning (10+ URIs). Low for small blocked-only volume.
