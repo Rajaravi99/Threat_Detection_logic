@@ -1,0 +1,86 @@
+// AWSWAF only - Suspicious User-Agent detection (no regex)
+let lookback      = 1h;
+let minScriptReq  = 100;   // requests from scripting libraries (curl, python...) to alert on
+let minScriptUris = 30;   // ...and they must also touch this many distinct URIs
+let minEmptyReq   = 30;   // requests with a missing or very short UA
+let minUaRotation = 5;    // distinct UAs from one IP (UA rotation / evasion)
+let ScannerTools  = dynamic(["sqlmap","nikto","nmap","masscan","nessus","acunetix","wpscan","dirbuster",
+                             "gobuster","ffuf","feroxbuster","nuclei","burpsuite","zgrab","hydra","havij",
+                             "metasploit","openvas","w3af","wfuzz","arachni","commix","jaeles","netsparker",
+                             "appscan","qualys","zaproxy","fimap","skipfish","whatweb","dirb"]);
+let ScriptClients = dynamic(["curl","wget","python-requests","python-urllib","python-httpx","aiohttp","libwww-perl",
+                             "go-http-client","okhttp","java","scrapy","httpclient","node-fetch","axios","powershell"]);
+let Allowed       = dynamic(["elb-healthchecker","pingdom","uptimerobot","site24x7","statuscake"]);   // your monitors
+AWSWAF
+| where TimeGenerated > ago(lookback)
+| extend ClientIp = tostring(HttpRequest.clientIp),
+    Uri = tostring(HttpRequest.uri),
+    Country = tostring(HttpRequest.country),
+    Args = tostring(HttpRequest.args),
+    Headers = todynamic(HttpRequest.headers)
+| where isnotempty(ClientIp)
+| extend Action = toupper(tostring(Action)),
+         Hdrs   = todynamic(Headers)            // if your table uses HttpRequest, use: todynamic(HttpRequest.headers)
+| mv-apply h = Hdrs on (
+    summarize UserAgent = take_anyif(tostring(h.value), tolower(tostring(h.name)) == "user-agent")
+  )
+| extend Ua = tolower(trim(" ", tostring(UserAgent)))
+| where not(Ua has_any (Allowed))
+| extend IsScanner = Ua has_any (ScannerTools),
+         IsScript  = Ua has_any (ScriptClients),
+         IsEmpty   = strlen(Ua) < 10,           // missing or too short to be a real browser
+         IsExploit = Ua contains "$jndi" or Ua contains "()" or Ua contains "<script" or Ua contains "union select"
+| extend IsSuspicious = IsScanner or IsScript or IsEmpty or IsExploit
+| summarize
+    Requests     = count(),
+    NotBlocked   = countif(Action != "BLOCK"),
+    Blocked      = countif(Action == "BLOCK"),
+    ScannerReqs  = countif(IsScanner),
+    ScannerNotBlk= countif(IsScanner and Action != "BLOCK"),
+    ExploitReqs  = countif(IsExploit),
+    ScriptReqs   = countif(IsScript),
+    EmptyReqs    = countif(IsEmpty),
+    DistinctUAs  = dcount(Ua),
+    DistinctUris = dcount(tostring(Uri)),
+    FirstSeen    = min(TimeGenerated),
+    LastSeen     = max(TimeGenerated),
+    UserAgents   = make_set_if(substring(Ua, 0, 150), IsSuspicious, 8),
+    Uris         = make_set(tostring(Uri), 8),
+    Countries    = make_set(tostring(Country), 3)
+    by ClientIp
+| where ScannerReqs > 0
+     or ExploitReqs > 0
+     or (ScriptReqs >= minScriptReq and DistinctUris >= minScriptUris)
+     or EmptyReqs >= minEmptyReq
+     or (DistinctUAs >= minUaRotation and Requests >= 20)
+| extend Reason = case(ExploitReqs > 0, "Exploit string in User-Agent",
+                       ScannerReqs > 0, "Known attack/scanner tool",
+                       DistinctUAs >= minUaRotation, "User-Agent rotation",
+                       EmptyReqs >= minEmptyReq, "Missing or abnormal User-Agent",
+                       "High-volume scripted client")
+| extend Severity = case(ExploitReqs > 0 or ScannerNotBlk > 0, "High",
+                         ScannerReqs > 0 or DistinctUAs >= minUaRotation, "Medium",
+                         "Low")
+| project TimeGenerated = LastSeen, ClientIp, Countries, Severity, Reason, Requests, NotBlocked, Blocked,
+          ScannerReqs, ScannerNotBlk, ExploitReqs, ScriptReqs, EmptyReqs, DistinctUAs, DistinctUris,
+          UserAgents, Uris, FirstSeen, LastSeen
+| extend IPCustomEntity = ClientIp
+// This query detects source IPs whose User-Agent (UA) looks malicious or automated, and shows whether the WAF blocked their requests.
+
+// How it works:
+
+// Extract the UA: Reads the last hour of AWSWAF logs and uses mv-apply to pull the User-Agent value out of the WAF’s header list. It then lowercases and trims it, and drops your allowlisted monitors.
+// Flag each request:
+// Scanner: UA contains a known attack tool (sqlmap, nikto, nuclei...).
+// Exploit: UA contains an attack string (${jndi, () {, <script).
+// Script: UA is a generic HTTP library (curl, python-requests...).
+// Empty: UA is missing or shorter than 10 characters.
+// Aggregate per IP: Counts requests, blocked vs. not blocked, hits per flag, distinct UAs and distinct URIs.
+// Alert conditions (any one is enough):
+// Exploit string: any request with one.
+// Scanner tool: any unblocked request, or 3+ blocked.
+// Scripted client: 100+ requests across 30+ URIs, with at least 30% of requests hitting unique URIs.
+// Empty UA: 30+ requests, 10+ URIs, and 80%+ of the IP’s traffic.
+// UA rotation: 8+ UAs, 50+ requests, and 10+ blocked.
+// Severity: High for an exploit string or an unblocked scanner request. Medium for a blocked scanner or UA rotation. Low for scripted or empty UAs.
+// Output: One row per IP with the reason, severity, counts, sample UAs and URIs, and the IP mapped as an entity.
