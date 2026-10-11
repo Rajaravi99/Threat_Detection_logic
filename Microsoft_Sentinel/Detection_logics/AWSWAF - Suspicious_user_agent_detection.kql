@@ -1,4 +1,4 @@
-// AWSWAF only - Suspicious User-Agent detection (no regex)
+// AWSWAF only - Suspicious User-Agent detection
 let lookback      = 1h;
 let minScriptReq  = 100;   // requests from scripting libraries (curl, python...) to alert on
 let minScriptUris = 30;   // ...and they must also touch this many distinct URIs
