@@ -9,13 +9,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
-import azure.functions as func
+import azure.functions as func  # type: ignore[import]
 import logging
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
-@app.function_name(name="my_test_function",methods=["GET", "POST"])
-@app.route(route="")
+@app.function_name(name="my_test_function")
+@app.route(route="my_test_function", methods=["GET", "POST"])
 
 def my_test_function(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
