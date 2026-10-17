@@ -1,0 +1,77 @@
+// AWS WAF - High volume of blocks from one IP followed by allowed requests
+let lookback = 20d;
+let minBlocked = 20;    // blocks needed to start the sequence
+let followWindow = 30m;   // allowed requests must occur within this time after the threshold
+
+let Events = (AWSWAF
+    | where TimeGenerated > ago(lookback)
+    | extend ClientIp = tostring(HttpRequest.clientIp),
+        Uri = tostring(HttpRequest.uri),
+        HttpMethod = tostring(HttpRequest.httpMethod),
+        Country = tostring(HttpRequest.country)
+    | where isnotempty(ClientIp)
+    | project TimeGenerated, ClientIp, Action = toupper(tostring(Action)),
+              Uri = tostring(Uri), HttpMethod = tostring(HttpMethod),
+              Rule = tostring(TerminatingRuleId), Country = tostring(Country),
+              WebAclId = tostring(WebAclId));
+
+let Blocks = (Events
+    | where Action == "BLOCK"
+    | summarize
+        BlockedCount = count(),
+        FirstBlock   = min(TimeGenerated),
+        LastBlock    = max(TimeGenerated),
+        BlockTimes   = make_list(TimeGenerated),
+        BlockedRules = make_set(Rule, 20),
+        BlockedUris  = make_set(Uri, 30),
+        Countries    = make_set(Country, 3)
+        by ClientIp
+    | where BlockedCount >= minBlocked
+    // Nth block timestamp = element [minBlocked-1] of the sorted list
+    | extend ThresholdTime = todatetime(array_sort_asc(BlockTimes)[minBlocked - 1])
+    | project-away BlockTimes);
+
+let Allows = (Events
+    | where Action == "ALLOW"
+    | project ClientIp, AllowTime = TimeGenerated, AllowedUri = Uri, AllowedMethod = HttpMethod, WebAclId);
+
+Blocks
+| join kind=inner Allows on ClientIp
+| where AllowTime > ThresholdTime and AllowTime <= ThresholdTime + followWindow
+| summarize
+    AllowedAfterCount = count(),
+    FirstAllowed      = min(AllowTime),
+    LastAllowed       = max(AllowTime),
+    AllowedUris       = make_set(AllowedUri, 30),
+    AllowedMethods    = make_set(AllowedMethod, 5),
+    WebAcls           = make_set(WebAclId, 3)
+    by ClientIp, BlockedCount, FirstBlock, LastBlock, ThresholdTime, tostring(BlockedRules), tostring(BlockedUris), tostring(Countries)
+| extend BlockedRules = parse_json(BlockedRules), BlockedUris = parse_json(BlockedUris), Countries = parse_json(Countries)
+| extend SameUriAllowed = array_length(set_intersect(BlockedUris, AllowedUris)),
+         MinutesToFirstAllow = datetime_diff('minute', FirstAllowed, ThresholdTime)
+| extend Severity = case(
+         SameUriAllowed > 0, "High",       // a previously blocked path later got through
+         BlockedCount >= 100, "High",
+         "Medium")
+| project TimeGenerated = LastAllowed, ClientIp, Countries, Severity,
+          BlockedCount, AllowedAfterCount, SameUriAllowed, MinutesToFirstAllow,
+          BlockedRules, BlockedUris, AllowedUris, AllowedMethods,
+          FirstBlock, LastBlock, ThresholdTime, FirstAllowed, LastAllowed, WebAcls
+| extend IPCustomEntity = ClientIp
+
+
+
+
+
+
+
+// What this detcetion logic does and how it works:
+// This query detects an IP that gets blocked many times by AWS WAF and then has requests allowed through shortly afterward, which can indicate a successful WAF bypass.
+
+// How it works:
+
+// Collect events: Pulls the last hour of AWS WAF logs and normalizes the key fields (IP, action, URI, rule, country).
+// Find heavy blockers: For each IP, counts BLOCK actions. IPs with 20 or more blocks are kept, and the timestamp of the 20th block becomes the ThresholdTime.
+// Find the follow-up: Joins those IPs to their ALLOW events and keeps only those that occurred within 30 minutes after ThresholdTime.
+// Score it: Checks whether any URI that was blocked earlier was later allowed (SameUriAllowed). That is the strongest signal of evasion. Severity is High if a blocked path got through or the IP had 100 or more blocks, otherwise Medium.
+// Output: One row per IP with block and allow counts, rules hit, URIs involved, timing, and the IP mapped as an entity for the alert.

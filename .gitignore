@@ -1,8 +1,31 @@
+# Environment files
+.env
+.env.*
+*.env
+variables.env
+**/variables.env
+
+# Allow safe example/template files
+!.env.example
+!*.env.example
+!variables.env.example
+
+# Certificates and private keys
+*.pem
+*.key
+*.pfx
+*.p12
+
+# Common credential files
+credentials.json
+secrets.json
+service-account.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+Microsoft_Sentinel\Python_ingestion_scripts\variables.env
 # C extensions
 *.so
 
@@ -135,3 +158,5 @@ __azurite_db*__.json
 .python_packages*.env
 .env
 local.settings.json
+DCRs_rg-mssp-sentinel-na-topco.json
+DCRs_rg-mssp-sentinel-na-topco.csv

@@ -1,0 +1,32 @@
+let TimeWindow = 15m;
+MicrosoftGraphActivityLogs
+| where TimeGenerated >= ago(TimeWindow)
+| extend RequestUri = tostring(RequestUri)
+| extend RequestMethod = tostring(RequestMethod)
+| extend UserId = tostring(UserId)
+| extend AppId = tostring(AppId)
+| extend ClientIP = tostring(IPAddress)
+| where RequestMethod =~ "GET"
+| where RequestUri has_any ("/messages", "/mailFolders", "/attachments", "/me/messages", "/users/","messages", "mailFolders", "attachments")
+| summarize
+    TotalMailApiCalls = count(),
+    UniqueMailObjects = dcount(RequestUri),
+    SampleUris = make_set(RequestUri, 25),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    ResponseSizeBytes_sum = sum(ResponseSizeBytes) / 1024.0 / 1024.0
+    by UserId, AppId, ClientIP, bin(TimeGenerated, 15m)
+| where TotalMailApiCalls >= 100 and UniqueMailObjects >= 100 and ResponseSizeBytes_sum >= 5
+| extend AccountCustomEntity = UserId, IPCustomEntity = ClientIP
+| project
+    ResponseSizeBytes_sum,
+    FirstSeen,
+    LastSeen,
+    UserId,
+    AppId,
+    ClientIP,
+    TotalMailApiCalls,
+    UniqueMailObjects,
+    SampleUris,
+    AccountCustomEntity,
+    IPCustomEntity

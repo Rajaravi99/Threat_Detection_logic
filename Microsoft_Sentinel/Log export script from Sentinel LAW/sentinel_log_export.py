@@ -44,7 +44,7 @@ except ImportError:
 # If you leave it blank, pass it while running the script:
 # python3 sentinel_log_export.py --workspace-id "<WORKSPACE_ID>"
 
-WORKSPACE_ID = "Your workspace ID for the log analytics workspace"
+WORKSPACE_ID = "Your-Log-Analytics-Workspace-ID-Here"
 
 
 # ============================================================
@@ -53,7 +53,7 @@ WORKSPACE_ID = "Your workspace ID for the log analytics workspace"
 # ============================================================
 
 KQL_QUERY = r"""
-Your KQL query which you want to use to export logs
+Test your KQL query here. For example, to get the last 10 records from the SecurityEvent table, you can use:
 """
 
 

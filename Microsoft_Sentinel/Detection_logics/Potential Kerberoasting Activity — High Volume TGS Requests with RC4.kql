@@ -1,7 +1,7 @@
 let TimeWindow = 30m;
 let ServiceThreshold = 15;
 SecurityEvent
-| where TimeGenerated > ago(2h)
+| where TimeGenerated > ago(TimeWindow)
 | where EventID == 4769
 | where AccountType == "User"
 | where ServiceName !endswith "$"
