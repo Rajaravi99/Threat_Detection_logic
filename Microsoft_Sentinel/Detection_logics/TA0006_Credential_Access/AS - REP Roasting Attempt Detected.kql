@@ -1,13 +1,21 @@
 SecurityEvent
-| where TimeGenerated > ago(24h)
+| where TimeGenerated > ago(30m)
 | where EventID == 4768
 | where AccountType == "User"
 | where Status == "0x0"
-| extend PreAuthType = coalesce(tostring(column_ifexists("PreAuthType", "")),extract(@"Name=['""]PreAuthType['""]>([^<]*)",1,tostring(column_ifexists("EventData", ""))))
+| where isnotempty( EventData) and EventData contains "targetUserName"
+| extend ParsedXml = parse_xml(tostring(EventData))
+| mv-apply XmlField = ParsedXml.EventData.Data on (
+extend
+    FieldName = tostring(XmlField["@Name"]),
+    FieldValue = tostring(XmlField["#text"])
+| where isnotempty(FieldName)
+| summarize ParsedFields = make_bag(pack(FieldName, FieldValue)))
+| extend PreAuthType = ParsedFields.preAuthType, TicketEncryptionType = ParsedFields.TicketEncryptionType
+| where isnotempty( PreAuthType) or isnotempty( TicketEncryptionType)
 | where PreAuthType in ("0", "0x0", "-")
 | where TargetUserName !endswith "$"
 | where TargetUserName !in~ ("krbtgt")
-| extend TicketEncryptionType = extract(@"TicketEncryptionType"">([^<]+)", 1, EventData)
 | summarize
     StartTime = min(TimeGenerated),
     EndTime = max(TimeGenerated),
