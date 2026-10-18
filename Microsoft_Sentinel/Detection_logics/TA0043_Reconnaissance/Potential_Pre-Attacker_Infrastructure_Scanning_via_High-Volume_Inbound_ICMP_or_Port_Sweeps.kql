@@ -1,0 +1,14 @@
+let lookBackPeriod = 1h;
+_Im_NetworkSession
+| where TimeGenerated >= ago(lookBackPeriod)
+| where NetworkDirection == 'Inbound'
+| where isnotempty( SrcIpAddr)
+| summarize dist_destination_ips_count = dcount(DstIpAddr),
+    dist_destination_ports_count = dcount(DstPortNumber),
+    startTime = min(TimeGenerated),
+    endTime = max(TimeGenerated),
+    DstIPList = make_set(DstIpAddr),
+    DstPortList = make_set(DstPortNumber)
+    by bin(TimeGenerated,1m), SrcIpAddr
+| where dist_destination_ips_count >= 100 or dist_destination_ports_count >= 500
+| project startTime,endTime,dist_destination_ips_count,dist_destination_ports_count, DstIPList, DstPortList, AttackerIP = SrcIpAddr
