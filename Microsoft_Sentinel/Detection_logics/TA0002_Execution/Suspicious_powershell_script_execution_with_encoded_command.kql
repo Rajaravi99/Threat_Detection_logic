@@ -1,0 +1,17 @@
+// Define common flags used by attackers/admins for encoded commands
+let EncodedFlags = dynamic(["-encodedcommand", "-enc", "-eco", "-en", "-e"]);
+// Query normalized process creation events
+_Im_ProcessCreate
+| where TimeGenerated >= ago(20d)
+// Target both Windows PowerShell and PowerShell Core
+| where ActingProcessName in~ ("powershell.exe", "pwsh.exe") or TargetProcessName in~ ("powershell.exe", "pwsh.exe")
+| where ParentProcessName !~ @"C:\Windows\CCM\CcmExec.exe"
+// Check if any variations of the encoded flag are present in the command line
+// Minimize false positives by ensuring a command line argument exists
+| where isnotempty(CommandLine) or isnotempty(TargetProcessCommandLine)
+| extend CleanCommandLine = tolower(coalesce(CommandLine, TargetProcessCommandLine))
+| where CleanCommandLine has_any (EncodedFlags)
+// Regex to ensure the flag is an isolated parameter and followed by a base64 string block (length validation)
+| where CleanCommandLine matches regex @"\s-(e|enc|encodedcommand|eco|en)\s+[a-za-z0-9+/={4,}]"
+| extend HostName = coalesce(Dvc, Computer), User = coalesce(User, ActorUsername)
+| project TimeGenerated, HostName, User, TargetProcessName, CleanCommandLine, ParentProcessName
