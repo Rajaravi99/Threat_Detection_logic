@@ -8,6 +8,7 @@
     "azureFunctions.projectLanguageModel": 2,
     "python.analysis.extraPaths": [
         "c:\\Users\\raviray\\.vscode\\extensions\\ms-security.ms-sentinel-2.3.0\\python",
-        "c:\\Users\\raviray\\.vscode\\extensions\\ms-security.ms-sentinel-2.4.0\\python"
+        "c:\\Users\\raviray\\.vscode\\extensions\\ms-security.ms-sentinel-2.4.0\\python",
+        "c:\\Users\\raviray\\.vscode\\extensions\\ms-security.ms-sentinel-2.4.1\\python"
     ]
 }
