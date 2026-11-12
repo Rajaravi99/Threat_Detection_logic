@@ -2,9 +2,9 @@ import json
 import subprocess
 
 # 1. Configuration
-SUBSCRIPTION_ID = "cd9863f7-ea88-4e01-a99b-739f9f9e0e40"
-RESOURCE_GROUP = "rg-testsent-nlwe002"
-WORKSPACE_NAME = "log-testsentdevops-nlwe003"
+SUBSCRIPTION_ID = "Your_Subscription_ID"
+RESOURCE_GROUP = "Your_Resource_Group_Name"
+WORKSPACE_NAME = "Your_Workspace_Name"
 
 DRY_RUN = True
 API_VERSION = "2025-09-01"
